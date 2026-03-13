@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FocusFlow — Deep Work Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<!-- ══════════════════════════════════════════════
+     Firebase SDK (compat mode — easiest for HTML)
+     Replace the config object below with YOUR keys
+══════════════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+/* ── Reset & Tokens ──────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0d1210;
+  --surface:    #131a17;
+  --card:       #192118;
+  --card-hover: #1d2820;
+  --border:     rgba(94,175,120,0.12);
+  --border-lg:  rgba(94,175,120,0.24);
+  --green:      #5eaf78;
+  --green-dim:  #3d7a52;
+  --teal:       #4ecdc4;
+  --red:        #e07070;
+  --gold:       #f0c060;
+  --silver:     #a8b8b0;
+  --bronze:     #c08050;
+  --text:       #e8f0ea;
+  --text-muted: #8aab8e;
+  --text-dim:   #4a6550;
+  --radius:     16px;
+  --radius-sm:  10px;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans:  'Outfit', system-ui, sans-serif;
+  --nav-h:      68px;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 10%, rgba(94,175,120,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 90% 85%, rgba(78,205,196,0.05) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════
+   AUTH SCREEN
+══════════════════════════════════════════════ */
+#authScreen {
+  position: fixed; inset: 0; z-index: 300;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.4s ease;
+}
+
+#authScreen.hidden { opacity: 0; pointer-events: none; }
+
+.auth-box {
+  background: var(--card);
+  border: 1px solid var(--border-lg);
+  border-radius: 24px;
+  padding: 36px 28px 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-box::before {
+  content: '';
+  position: absolute; top: -80px; right: -80px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(94,175,120,0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.auth-logo {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+
+.auth-logo-mark {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(94,175,120,0.4);
+}
+
+.auth-logo-mark svg { width: 20px; height: 20px; }
+
+.auth-logo-name {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  color: var(--text);
+}
+.auth-logo-name em { font-style: italic; color: var(--green); }
+
+.auth-tagline {
+  font-size: 0.83rem;
+  color: var(--text-dim);
+  margin-bottom: 30px;
+  padding-left: 48px;
+  margin-top: -2px;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, rgba(94,175,120,0.2), rgba(78,205,196,0.1));
+  color: var(--green);
+  border: 1px solid var(--border-lg);
+}
+
+.auth-field { margin-bottom: 14px; }
+
+.auth-field label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+
+.auth-field input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-field input:focus {
+  border-color: var(--green-dim);
+  box-shadow: 0 0 0 3px rgba(94,175,120,0.1);
+}
+
+.auth-field input::placeholder { color: var(--text-dim); }
+
+.btn-auth {
+  width: 100%;
+  padding: 13px;
+  margin-top: 6px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  color: #0d1210;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.01em;
+}
+
+.btn-auth:hover { transform: scale(1.02); box-shadow: 0 6px 24px rgba(94,175,120,0.4); }
+.btn-auth:active { transform: scale(0.98); }
+.btn-auth:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.auth-error {
+  background: rgba(224,112,112,0.1);
+  border: 1px solid rgba(224,112,112,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--red);
+  margin-bottom: 14px;
+  display: none;
+}
+.auth-error.show { display: block; }
+
+#signupNameField { display: none; }
+
+/* ══════════════════════════════════════════════
+   MAIN APP SHELL
+══════════════════════════════════════════════ */
+#appShell {
+  position: relative; z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+  padding-bottom: calc(var(--nav-h) + 16px);
+  opacity: 0;
+  transition: opacity 0.4s ease 0.1s;
+}
+
+#appShell.visible { opacity: 1; }
+
+/* ── Top Header ────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0 18px;
+}
+
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.header-logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 14px rgba(94,175,120,0.35);
+}
+.header-logo-mark svg { width: 16px; height: 16px; }
+
+.header-logo-name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--text);
+}
+.header-logo-name em { font-style: italic; color: var(--green); }
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.user-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-dim), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #0d1210;
+  flex-shrink: 0;
+  border: 2px solid var(--border-lg);
+}
+
+.btn-signout {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-signout:hover { border-color: var(--red); color: var(--red); }
+
+/* ── Bottom Nav ──────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: var(--nav-h);
+  background: rgba(19,26,23,0.92);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+  z-index: 50;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.nav-btn:hover { color: var(--text-muted); }
+.nav-btn.active { color: var(--green); }
+
+.nav-btn svg { width: 22px; height: 22px; transition: transform 0.2s; }
+.nav-btn.active svg { transform: scale(1.1); }
+
+.nav-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.nav-dot {
+  position: absolute;
+  top: 6px; right: 18px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(94,175,120,0.7);
+  display: none;
+}
+.nav-dot.show { display: block; animation: pulse-dot 2s ease-in-out infinite; }
+
+/* ── Tab Panels ───────────────────────────────────── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeUp 0.25s ease; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════
+   TIMER TAB  (Step 1 styles preserved)
+══════════════════════════════════════════════ */
+.mode-switcher {
+  display: flex;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px; gap: 4px;
+  margin-bottom: 22px;
+}
+
+.mode-btn {
+  flex: 1; padding: 9px 6px;
+  border: none; border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, rgba(94,175,120,0.22), rgba(78,205,196,0.12));
+  color: var(--green);
+  border: 1px solid var(--border-lg);
+}
+
+.mode-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.04); }
+
+.timer-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 24px 28px;
+  margin-bottom: 18px;
+  position: relative; overflow: hidden;
+}
+
+.timer-card::after {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(94,175,120,0.06), transparent 70%);
+  pointer-events: none;
+}
+
+.timer-ring-wrap {
+  display: flex; justify-content: center; align-items: center;
+  position: relative; margin-bottom: 22px;
+}
+
+.ring-svg { transform: rotate(-90deg); }
+
+.ring-bg   { fill: none; stroke: rgba(94,175,120,0.1); stroke-width: 6; }
+
+.ring-progress {
+  fill: none;
+  stroke: url(#ringGrad);
+  stroke-width: 6; stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+  filter: drop-shadow(0 0 6px rgba(94,175,120,0.5));
+}
+
+.ring-svg.break-mode .ring-progress {
+  stroke: url(#ringGradBreak);
+  filter: drop-shadow(0 0 6px rgba(78,205,196,0.5));
+}
+
+.timer-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+}
+
+.timer-display {
+  font-family: var(--font-serif);
+  font-size: 3.2rem; line-height: 1;
+  letter-spacing: -0.02em; color: var(--text);
+}
+
+.timer-mode-label {
+  font-size: 0.68rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.active-task-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(94,175,120,0.07);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 20px;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+.active-task-bar .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dim); flex-shrink: 0; transition: all 0.3s;
+}
+
+.active-task-bar.live .dot {
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(94,175,120,0.7);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.active-task-bar.live { color: var(--text); }
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.55; transform: scale(0.8); }
+}
+
+.timer-controls {
+  display: flex; align-items: center;
+  justify-content: center; gap: 14px;
+}
+
+.btn-icon {
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--border-lg);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-icon:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.btn-icon svg { width: 18px; height: 18px; }
+
+.btn-play {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  color: #0d1210;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(94,175,120,0.4);
+  transition: all 0.2s; flex-shrink: 0;
+}
+.btn-play:hover { transform: scale(1.06); box-shadow: 0 6px 28px rgba(94,175,120,0.55), 0 0 0 8px rgba(94,175,120,0.08); }
+.btn-play:active { transform: scale(0.97); }
+.btn-play svg { width: 26px; height: 26px; }
+
+.stats-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px; margin-bottom: 26px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 10px; text-align: center;
+}
+
+.stat-value {
+  font-family: var(--font-serif);
+  font-size: 1.45rem; line-height: 1;
+  color: var(--green); margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.66rem; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Task section */
+.section-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 13px;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 1.18rem; font-style: italic;
+  color: var(--text); letter-spacing: -0.01em;
+}
+
+.section-meta { font-size: 0.72rem; color: var(--text-dim); }
+
+.task-input-wrap { display: flex; gap: 8px; margin-bottom: 13px; }
+
+.task-input {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 15px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.88rem; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.task-input::placeholder { color: var(--text-dim); }
+.task-input:focus { border-color: var(--green-dim); box-shadow: 0 0 0 3px rgba(94,175,120,0.08); }
+
+.btn-add {
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  border: none; border-radius: var(--radius-sm);
+  width: 44px; color: #0d1210;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.btn-add:hover { transform: scale(1.06); box-shadow: 0 4px 16px rgba(94,175,120,0.35); }
+
+.task-list { display: flex; flex-direction: column; gap: 7px; }
+
+.task-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 13px;
+  display: flex; align-items: center; gap: 11px;
+  transition: all 0.25s; animation: slideIn 0.28s ease;
+}
+
+.task-item:hover { border-color: var(--border-lg); background: var(--card-hover); }
+
+.task-item.active-session {
+  border-color: var(--green-dim);
+  background: rgba(94,175,120,0.06);
+}
+
+.task-item.completed { opacity: 0.4; }
+.task-item.completed .task-text { text-decoration: line-through; color: var(--text-dim); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.task-check {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: 1.5px solid var(--border-lg);
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.task-check:hover { border-color: var(--green); }
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-check svg { width: 12px; height: 12px; display: none; }
+.task-check.checked svg { display: block; }
+
+.task-text { flex: 1; font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+
+.task-actions {
+  display: flex; gap: 5px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.task-item:hover .task-actions { opacity: 1; }
+
+.btn-focus-task, .btn-delete-task {
+  width: 30px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; color: var(--text-muted);
+}
+.btn-focus-task:hover { background: rgba(94,175,120,0.15); border-color: var(--green-dim); color: var(--green); }
+.btn-delete-task:hover { background: rgba(224,112,112,0.12); border-color: rgba(224,112,112,0.3); color: var(--red); }
+.btn-focus-task svg, .btn-delete-task svg { width: 14px; height: 14px; }
+
+.empty-state {
+  text-align: center; padding: 28px 20px;
+  color: var(--text-dim); font-size: 0.83rem; line-height: 1.6;
+  display: none;
+}
+.empty-state.visible { display: block; }
+.empty-icon { font-size: 1.8rem; margin-bottom: 8px; opacity: 0.5; }
+
+/* ══════════════════════════════════════════════
+   FOCUS ROOM TAB
+══════════════════════════════════════════════ */
+.room-header {
+  padding: 6px 0 20px;
+}
+
+.room-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem; font-style: italic;
+  color: var(--text); margin-bottom: 6px;
+}
+
+.room-subtitle {
+  font-size: 0.82rem; color: var(--text-muted);
+}
+
+.room-live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(94,175,120,0.1);
+  border: 1px solid var(--border-lg);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.72rem; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 18px;
+}
+
+.live-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(94,175,120,0.8);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.focus-room-list {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 28px;
+}
+
+.focus-user-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  transition: all 0.3s;
+  animation: slideIn 0.3s ease;
+}
+
+.focus-user-card.is-focusing {
+  border-color: rgba(94,175,120,0.3);
+  background: rgba(94,175,120,0.05);
+}
+
+.focus-user-card.is-you {
+  border-color: rgba(78,205,196,0.3);
+  background: rgba(78,205,196,0.04);
+}
+
+.user-avatar-lg {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-dim), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.9rem; color: #0d1210;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.is-focusing .user-avatar-lg { border-color: var(--green); }
+
+/* Glowing ring around avatar */
+.focus-ring {
+  position: absolute; inset: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  opacity: 0;
+  transform: scale(1);
+  transition: opacity 0.3s;
+}
+
+.is-focusing .focus-ring {
+  opacity: 1;
+  animation: focus-ring-pulse 2s ease-in-out infinite;
+}
+
+@keyframes focus-ring-pulse {
+  0%,100% { transform: scale(1);    opacity: 0.8; }
+  50%     { transform: scale(1.12); opacity: 0.3; }
+}
+
+.focus-user-info { flex: 1; min-width: 0; }
+
+.focus-user-name {
+  font-size: 0.92rem; font-weight: 500;
+  color: var(--text); margin-bottom: 3px;
+}
+
+.focus-user-task {
+  font-size: 0.75rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.focus-status-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; font-weight: 500;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.status-active {
+  color: var(--green);
+  border-color: rgba(94,175,120,0.3);
+  background: rgba(94,175,120,0.08);
+}
+
+.status-idle {
+  color: var(--text-dim);
+  border-color: var(--border);
+  background: transparent;
+}
+
+.focus-count-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.focus-count-label { font-size: 0.82rem; color: var(--text-muted); }
+.focus-count-num {
+  font-family: var(--font-serif);
+  font-size: 1.5rem; color: var(--green);
+}
+
+/* Room empty */
+.room-empty {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-dim); font-size: 0.85rem;
+}
+.room-empty-icon { font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4; }
+
+/* ══════════════════════════════════════════════
+   LEADERBOARD TAB
+══════════════════════════════════════════════ */
+.lb-header { padding: 6px 0 20px; }
+
+.lb-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem; font-style: italic;
+  color: var(--text); margin-bottom: 6px;
+}
+
+.lb-subtitle { font-size: 0.82rem; color: var(--text-muted); }
+
+.lb-period-toggle {
+  display: flex;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 3px; gap: 3px;
+  margin-bottom: 20px;
+}
+
+.lb-period-btn {
+  flex: 1; padding: 8px;
+  border: none; border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.lb-period-btn.active {
+  background: linear-gradient(135deg, rgba(94,175,120,0.2), rgba(78,205,196,0.1));
+  color: var(--green);
+  border: 1px solid var(--border-lg);
+}
+
+/* Top 3 podium */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.podium-slot {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 8px;
+  transition: all 0.3s;
+  animation: slideIn 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.podium-slot:nth-child(1) { /* 2nd place */
+  height: 145px;
+  padding-top: 20px;
+}
+.podium-slot:nth-child(2) { /* 1st place */
+  height: 170px;
+  padding-top: 20px;
+  border-color: rgba(240,192,96,0.3);
+  background: rgba(240,192,96,0.04);
+}
+.podium-slot:nth-child(3) { /* 3rd place */
+  height: 128px;
+  padding-top: 20px;
+}
+
+.podium-slot:nth-child(2)::before {
+  content: '';
+  position: absolute; top: -30px; left: 50%;
+  transform: translateX(-50%);
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, rgba(240,192,96,0.1), transparent 70%);
+}
+
+.podium-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-dim), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.9rem; color: #0d1210;
+  position: relative; flex-shrink: 0;
+}
+
+.rank-crown {
+  position: absolute; top: -18px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.1rem; line-height: 1;
+}
+
+.podium-name {
+  font-size: 0.8rem; font-weight: 500;
+  color: var(--text); text-align: center;
+  max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.podium-mins {
+  font-family: var(--font-serif);
+  font-size: 1.1rem; color: var(--green);
+  line-height: 1;
+}
+
+.podium-mins-label {
+  font-size: 0.62rem; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); margin-top: -5px;
+}
+
+.podium-rank-badge {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 600;
+}
+
+.rank-1 { background: var(--gold);   color: #3a2a00; }
+.rank-2 { background: var(--silver); color: #1a2020; }
+.rank-3 { background: var(--bronze); color: #2a1a0a; }
+
+/* Rest of leaderboard */
+.lb-list { display: flex; flex-direction: column; gap: 7px; }
+
+.lb-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 13px;
+  animation: slideIn 0.3s ease;
+  transition: all 0.2s;
+}
+
+.lb-row:hover { border-color: var(--border-lg); background: var(--card-hover); }
+
+.lb-row.is-you {
+  border-color: rgba(78,205,196,0.25);
+  background: rgba(78,205,196,0.04);
+}
+
+.lb-rank-num {
+  width: 24px; text-align: center;
+  font-size: 0.8rem; font-weight: 600;
+  color: var(--text-dim); flex-shrink: 0;
+}
+
+.lb-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-dim), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.78rem; color: #0d1210;
+  flex-shrink: 0;
+}
+
+.lb-info { flex: 1; min-width: 0; }
+
+.lb-name {
+  font-size: 0.88rem; font-weight: 500;
+  color: var(--text);
+}
+
+.lb-sub {
+  font-size: 0.72rem; color: var(--text-dim);
+}
+
+.lb-mins {
+  font-family: var(--font-serif);
+  font-size: 1.15rem; color: var(--green);
+  line-height: 1; text-align: right; flex-shrink: 0;
+}
+
+.lb-mins-label {
+  font-size: 0.6rem; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); text-align: right;
+}
+
+.lb-you-tag {
+  font-size: 0.65rem; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--teal); background: rgba(78,205,196,0.1);
+  border: 1px solid rgba(78,205,196,0.2);
+  border-radius: 4px; padding: 2px 6px;
+}
+
+.lb-empty {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-dim); font-size: 0.85rem;
+}
+
+/* ══════════════════════════════════════════════
+   CUSTOM MODAL
+══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-lg);
+  border-radius: 20px; padding: 26px 22px;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  transform: translateY(12px); transition: transform 0.25s ease;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem; font-style: italic;
+  margin-bottom: 18px; color: var(--text);
+}
+
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+
+.modal-field label {
+  display: block;
+  font-size: 0.7rem; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 7px;
+}
+
+.modal-field input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  color: var(--text); font-family: var(--font-sans);
+  font-size: 1rem; font-weight: 500;
+  text-align: center; outline: none; transition: border-color 0.2s;
+}
+.modal-field input:focus { border-color: var(--green-dim); }
+
+.modal-actions { display: flex; gap: 10px; }
+
+.btn-cancel {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-muted); font-family: var(--font-sans);
+  font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+.btn-apply {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--green), var(--teal));
+  color: #0d1210; font-family: var(--font-sans);
+  font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-apply:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(94,175,120,0.35); }
+
+/* ── Toast ─────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 82px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface);
+  border: 1px solid var(--border-lg);
+  border-radius: 12px; padding: 12px 18px;
+  font-size: 0.83rem; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 150;
+  display: flex; align-items: center; gap: 9px;
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Loading Spinner ───────────────────────────── */
+.spinner-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+  transition: opacity 0.4s ease;
+}
+.spinner-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.spinner {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner-text {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--text-muted); font-size: 1rem;
+}
+
+@keyframes celebrate {
+  0%   { box-shadow: none; }
+  50%  { box-shadow: 0 0 40px rgba(94,175,120,0.5); }
+  100% { box-shadow: none; }
+}
+
+.timer-card.finished { animation: celebrate 0.7s ease 3; }
+
+@media (max-width: 380px) {
+  .timer-display { font-size: 2.8rem; }
+  .podium-slot:nth-child(2) { height: 155px; }
+  .podium-slot:nth-child(1) { height: 132px; }
+  .podium-slot:nth-child(3) { height: 118px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="spinnerOverlay">
+  <div class="spinner"></div>
+  <div class="spinner-text">Loading FocusFlow…</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════ -->
+<div id="authScreen" class="hidden">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7.5" stroke="#0d1210" stroke-width="1.5"/>
+          <path d="M9 5v4l2.5 2.5" stroke="#0d1210" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="auth-logo-name">Focus<em>Flow</em></span>
+    </div>
+    <div class="auth-tagline">Deep work, together.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <div class="auth-field" id="signupNameField">
+      <label>Display Name</label>
+      <input type="text" id="authName" placeholder="What should we call you?" maxlength="30"/>
+    </div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="authEmail" placeholder="you@example.com"/>
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="authPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAuth()"/>
+    </div>
+    <button class="btn-auth" id="authBtn" onclick="doAuth()">Log In</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════ -->
+<div id="appShell">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">
+      <div class="header-logo-mark">
+        <svg viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7.5" stroke="#0d1210" stroke-width="1.5"/>
+          <path d="M9 5v4l2.5 2.5" stroke="#0d1210" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="header-logo-name">Focus<em>Flow</em></span>
+    </div>
+    <div class="header-right">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <button class="btn-signout" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- ── TIMER TAB ─────────────────────────────── -->
+  <div class="tab-panel active" id="tabTimer">
+
+    <div class="mode-switcher">
+      <button class="mode-btn active" data-mode="focus" onclick="switchMode('focus',this)">Focus</button>
+      <button class="mode-btn" data-mode="short" onclick="switchMode('short',this)">Short Break</button>
+      <button class="mode-btn" data-mode="long" onclick="switchMode('long',this)">Long Break</button>
+      <button class="mode-btn" data-mode="custom" onclick="openCustomModal()">Custom</button>
+    </div>
+
+    <div class="timer-card" id="timerCard">
+      <div class="timer-ring-wrap">
+        <svg class="ring-svg" id="ringSvg" width="210" height="210" viewBox="0 0 210 210">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#5eaf78"/>
+              <stop offset="100%" stop-color="#4ecdc4"/>
+            </linearGradient>
+            <linearGradient id="ringGradBreak" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#4ecdc4"/>
+              <stop offset="100%" stop-color="#5eaf78"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="105" cy="105" r="96"/>
+          <circle class="ring-progress" id="ringProgress" cx="105" cy="105" r="96"
+            stroke-dasharray="603" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-inner">
+          <div class="timer-display" id="timerDisplay">25:00</div>
+          <div class="timer-mode-label" id="timerModeLabel">FOCUS</div>
+        </div>
+      </div>
+
+      <div class="active-task-bar" id="activeTaskBar">
+        <span class="dot"></span>
+        <span id="activeTaskText">No task selected</span>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn-icon" title="Restart" onclick="restartTimer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <button class="btn-play" id="playBtn" onclick="toggleTimer()">
+          <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+            <rect x="6" y="4" width="4" height="16" rx="1"/>
+            <rect x="14" y="4" width="4" height="16" rx="1"/>
+          </svg>
+        </button>
+        <button class="btn-icon" title="Skip" onclick="skipSession()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="statSessions">0</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statMinutes">0</div>
+        <div class="stat-label">Min Focused</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statTasks">0</div>
+        <div class="stat-label">Tasks Done</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">Today's Tasks</h2>
+      <span class="section-meta" id="taskMeta">0 tasks</span>
+    </div>
+    <div class="task-input-wrap">
+      <input class="task-input" id="taskInput" type="text"
+        placeholder="Add a task and press ↵" maxlength="80"
+        onkeydown="if(event.key==='Enter')addTask()"/>
+      <button class="btn-add" onclick="addTask()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="20" height="20">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="task-list" id="taskList"></div>
+    <div class="empty-state visible" id="emptyTaskState">
+      <div class="empty-icon">🌿</div>
+      Add your first task and start a focused session.
+    </div>
+  </div>
+
+  <!-- ── FOCUS ROOM TAB ─────────────────────────── -->
+  <div class="tab-panel" id="tabRoom">
+    <div class="room-header">
+      <div class="room-title">Focus Room</div>
+      <div class="room-subtitle">See who's deep in work right now</div>
+    </div>
+
+    <div class="room-live-badge">
+      <span class="live-pulse"></span>
+      Live
+    </div>
+
+    <div class="focus-room-list" id="focusRoomList">
+      <div class="room-empty">
+        <div class="room-empty-icon">🌙</div>
+        Waiting for users to join…
+      </div>
+    </div>
+
+    <div class="focus-count-bar">
+      <span class="focus-count-label">Currently focusing</span>
+      <span class="focus-count-num" id="focusingCount">0</span>
+    </div>
+  </div>
+
+  <!-- ── LEADERBOARD TAB ────────────────────────── -->
+  <div class="tab-panel" id="tabLeader">
+    <div class="lb-header">
+      <div class="lb-title">Leaderboard</div>
+      <div class="lb-subtitle">Ranked by total focused minutes</div>
+    </div>
+
+    <div class="lb-period-toggle">
+      <button class="lb-period-btn active" onclick="switchLbPeriod('allTime', this)">All Time</button>
+      <button class="lb-period-btn" onclick="switchLbPeriod('week', this)">This Week</button>
+    </div>
+
+    <!-- Podium (top 3) -->
+    <div class="podium" id="lbPodium"></div>
+
+    <!-- Rank 4+ -->
+    <div class="lb-list" id="lbList"></div>
+    <div class="lb-empty" id="lbEmpty" style="display:none">
+      <div class="room-empty-icon">📊</div>
+      No data yet. Start focusing!
+    </div>
+  </div>
+
+</div><!-- /appShell -->
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-btn active" onclick="switchTab('Timer')" id="navTimer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+    </svg>
+    <span class="nav-label">Timer</span>
+    <span class="nav-dot" id="timerNavDot"></span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('Room')" id="navRoom">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    <span class="nav-label">Focus Room</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('Leader')" id="navLeader">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    <span class="nav-label">Leaderboard</span>
+  </button>
+</nav>
+
+<!-- Custom Duration Modal -->
+<div class="modal-overlay" id="customModal" onclick="if(event.target===this)closeCustomModal()">
+  <div class="modal">
+    <div class="modal-title">Custom Duration</div>
+    <div class="modal-grid">
+      <div class="modal-field">
+        <label>Focus (min)</label>
+        <input type="number" id="customFocus" value="25" min="1" max="120"/>
+      </div>
+      <div class="modal-field">
+        <label>Break (min)</label>
+        <input type="number" id="customBreak" value="5" min="1" max="60"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCustomModal()">Cancel</button>
+      <button class="btn-apply" onclick="applyCustom()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════════════════════
+   🔥 FIREBASE CONFIG
+   ▸ Replace these values with YOUR Firebase project
+     keys (see setup guide in the README)
+════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyC6rUaL24ArgVAZu3uCyxRclk7xzel10kI",
+  authDomain:        "focus-flow-59480.firebaseapp.com",
+  projectId:         "focus-flow-59480",
+  storageBucket:     "focus-flow-59480.firebasestorage.app",
+  messagingSenderId: "134241442729",
+  appId:             "1:134241442729:web:5420c21b7b9a61b8d4c2b8"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ════════════════════════════════════════════════
+   APP STATE
+════════════════════════════════════════════════ */
+let currentUser  = null;
+let userDoc      = null;
+let authMode     = 'login';     // 'login' | 'signup'
+let lbPeriod     = 'allTime';   // 'allTime' | 'week'
+let usersUnsubscribe = null;    // Firestore listener cleanup
+
+const timerState = {
+  mode:       'focus',
+  total:      25 * 60,
+  remaining:  25 * 60,
+  running:    false,
+  interval:   null,
+  sessions:   0,
+  minutes:    0,
+  tasksDone:  0,
+  activeTask: null,   // { id, text }
+  tasks:      [],
+  customFocus: 25,
+  customBreak: 5,
+};
+
+/* ════════════════════════════════════════════════
+   AUTH
+════════════════════════════════════════════════ */
+auth.onAuthStateChanged(async user => {
+  document.getElementById('spinnerOverlay').classList.add('hidden');
+
+  if (user) {
+    currentUser = user;
+    await loadUserDoc();
+    showApp();
+    startUsersListener();
+  } else {
+    currentUser = null;
+    showAuthScreen();
+    stopUsersListener();
+  }
+});
+
+function showAuthScreen() {
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('appShell').classList.remove('visible');
+  document.getElementById('bottomNav').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('appShell').classList.add('visible');
+  document.getElementById('bottomNav').style.display = 'flex';
+  updateUIFromUserDoc();
+}
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'login') || (i === 1 && mode === 'signup'));
+  });
+  document.getElementById('signupNameField').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('authBtn').textContent = mode === 'signup' ? 'Create Account' : 'Log In';
+  document.getElementById('authError').classList.remove('show');
+}
+
+async function doAuth() {
+  const btn   = document.getElementById('authBtn');
+  const email = document.getElementById('authEmail').value.trim();
+  const pass  = document.getElementById('authPassword').value;
+  const name  = document.getElementById('authName').value.trim();
+  const errEl = document.getElementById('authError');
+
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = authMode === 'signup' ? 'Creating…' : 'Logging in…';
+
+  try {
+    if (authMode === 'signup') {
+      if (!name) throw new Error('Please enter a display name.');
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      await db.collection('users').doc(cred.user.uid).set({
+        displayName:    name,
+        email:          email,
+        minutesFocused: 0,
+        weekMinutes:    0,
+        sessions:       0,
+        tasksDone:      0,
+        isFocusing:     false,
+        focusingTask:   '',
+        weekStart:      getWeekStart(),
+        joinedAt:       firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } else {
+      await auth.signInWithEmailAndPassword(email, pass);
+    }
+  } catch (err) {
+    errEl.textContent = friendlyAuthError(err.code || err.message);
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = authMode === 'signup' ? 'Create Account' : 'Log In';
+  }
+}
+
+async function signOut() {
+  if (timerState.running) pauseTimer();
+  await setFocusingStatus(false, '');
+  await auth.signOut();
+}
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/email-already-in-use': 'That email is already registered. Try logging in.',
+    'auth/invalid-email':        'Please enter a valid email address.',
+    'auth/weak-password':        'Password should be at least 6 characters.',
+    'auth/user-not-found':       'No account found with that email.',
+    'auth/wrong-password':       'Incorrect password.',
+    'auth/too-many-requests':    'Too many attempts. Please try again later.',
+    'auth/invalid-credential':   'Invalid email or password.',
+  };
+  return map[code] || code;
+}
+
+/* ════════════════════════════════════════════════
+   USER DOC
+════════════════════════════════════════════════ */
+async function loadUserDoc() {
+  const snap = await db.collection('users').doc(currentUser.uid).get();
+  if (snap.exists) {
+    userDoc = snap.data();
+    // Reset week if needed
+    if (userDoc.weekStart !== getWeekStart()) {
+      await db.collection('users').doc(currentUser.uid).update({
+        weekMinutes: 0,
+        weekStart: getWeekStart(),
+      });
+      userDoc.weekMinutes = 0;
+      userDoc.weekStart   = getWeekStart();
+    }
+  }
+}
+
+function updateUIFromUserDoc() {
+  if (!userDoc) return;
+  timerState.sessions  = userDoc.sessions   || 0;
+  timerState.minutes   = userDoc.minutesFocused || 0;
+  timerState.tasksDone = userDoc.tasksDone   || 0;
+
+  document.getElementById('statSessions').textContent = timerState.sessions;
+  document.getElementById('statMinutes').textContent  = timerState.minutes;
+  document.getElementById('statTasks').textContent    = timerState.tasksDone;
+
+  const initials = (userDoc.displayName || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent = initials;
+}
+
+async function saveSessionToFirebase(minutesEarned) {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      minutesFocused: firebase.firestore.FieldValue.increment(minutesEarned),
+      weekMinutes:    firebase.firestore.FieldValue.increment(minutesEarned),
+      sessions:       firebase.firestore.FieldValue.increment(1),
+    });
+    // Refresh local
+    userDoc.minutesFocused = (userDoc.minutesFocused || 0) + minutesEarned;
+    userDoc.weekMinutes    = (userDoc.weekMinutes    || 0) + minutesEarned;
+    userDoc.sessions       = (userDoc.sessions       || 0) + 1;
+  } catch(e) { console.warn('Firebase save error', e); }
+}
+
+async function saveTaskDoneToFirebase() {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      tasksDone: firebase.firestore.FieldValue.increment(1),
+    });
+    userDoc.tasksDone = (userDoc.tasksDone || 0) + 1;
+  } catch(e) { console.warn(e); }
+}
+
+async function setFocusingStatus(isFocusing, taskText) {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      isFocusing:   isFocusing,
+      focusingTask: taskText || '',
+      lastActive:   firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch(e) { console.warn(e); }
+}
+
+/* ════════════════════════════════════════════════
+   REALTIME USERS LISTENER
+════════════════════════════════════════════════ */
+function startUsersListener() {
+  stopUsersListener();
+  usersUnsubscribe = db.collection('users')
+    .orderBy('minutesFocused', 'desc')
+    .limit(50)
+    .onSnapshot(snapshot => {
+      const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFocusRoom(users);
+      renderLeaderboard(users);
+    }, err => console.warn('Listener error', err));
+}
+
+function stopUsersListener() {
+  if (usersUnsubscribe) { usersUnsubscribe(); usersUnsubscribe = null; }
+}
+
+/* ════════════════════════════════════════════════
+   TIMER CORE
+════════════════════════════════════════════════ */
+function toggleTimer() {
+  timerState.running ? pauseTimer() : startTimer();
+}
+
+function startTimer() {
+  if (timerState.remaining <= 0) return;
+  timerState.running = true;
+  setPlayBtn(true);
+
+  // Update Firestore presence
+  if (timerState.mode === 'focus') {
+    setFocusingStatus(true, timerState.activeTask?.text || '');
+    document.getElementById('timerNavDot').classList.add('show');
+  }
+
+  timerState.interval = setInterval(() => {
+    timerState.remaining--;
+    updateTimerDisplay();
+    updateRing();
+    if (timerState.remaining <= 0) {
+      clearInterval(timerState.interval);
+      timerState.running = false;
+      onSessionComplete();
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timerState.interval);
+  timerState.running = false;
+  setPlayBtn(false);
+  setFocusingStatus(false, '');
+  document.getElementById('timerNavDot').classList.remove('show');
+}
+
+function restartTimer() {
+  pauseTimer();
+  timerState.remaining = timerState.total;
+  updateTimerDisplay();
+  updateRing();
+}
+
+function skipSession() {
+  pauseTimer();
+  timerState.remaining = 0;
+  updateTimerDisplay();
+  updateRing();
+  onSessionComplete();
+}
+
+async function onSessionComplete() {
+  setPlayBtn(false);
+  setFocusingStatus(false, '');
+  document.getElementById('timerNavDot').classList.remove('show');
+
+  if (timerState.mode === 'focus') {
+    const earned = timerState.customFocus;
+    timerState.sessions++;
+    timerState.minutes += earned;
+    document.getElementById('statSessions').textContent = timerState.sessions;
+    document.getElementById('statMinutes').textContent  = timerState.minutes;
+
+    await saveSessionToFirebase(earned);
+
+    document.getElementById('timerCard').classList.add('finished');
+    setTimeout(() => document.getElementById('timerCard').classList.remove('finished'), 2100);
+
+    showToast('🎉', 'Focus session complete!');
+    autoSwitchMode(timerState.sessions % 4 === 0 ? 'long' : 'short');
+  } else {
+    showToast('⚡', 'Break over. Time to focus!');
+    autoSwitchMode('focus');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   MODE SWITCHING
+════════════════════════════════════════════════ */
+function switchMode(mode, btn) {
+  if (mode === 'custom') return;
+  pauseTimer();
+  timerState.mode = mode;
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  applyModeTime(mode);
+}
+
+function applyModeTime(mode) {
+  let mins;
+  const isBreak = mode !== 'focus';
+  if (mode === 'focus') {
+    mins = timerState.customFocus;
+    document.getElementById('timerModeLabel').textContent = 'FOCUS';
+    document.getElementById('ringSvg').classList.remove('break-mode');
+  } else if (mode === 'short') {
+    mins = timerState.customBreak;
+    document.getElementById('timerModeLabel').textContent = 'SHORT BREAK';
+    document.getElementById('ringSvg').classList.add('break-mode');
+  } else {
+    mins = 15;
+    document.getElementById('timerModeLabel').textContent = 'LONG BREAK';
+    document.getElementById('ringSvg').classList.add('break-mode');
+  }
+  timerState.total     = mins * 60;
+  timerState.remaining = mins * 60;
+  updateTimerDisplay();
+  updateRing();
+}
+
+function autoSwitchMode(next) {
+  setTimeout(() => {
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === next)
+    );
+    timerState.mode = next;
+    applyModeTime(next);
+  }, 500);
+}
+
+/* ════════════════════════════════════════════════
+   DISPLAY HELPERS
+════════════════════════════════════════════════ */
+function updateTimerDisplay() {
+  const m = String(Math.floor(timerState.remaining / 60)).padStart(2,'0');
+  const s = String(timerState.remaining % 60).padStart(2,'0');
+  document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+}
+
+function updateRing() {
+  const pct    = timerState.remaining / timerState.total;
+  const offset = 603 * (1 - pct);
+  document.getElementById('ringProgress').style.strokeDashoffset = offset;
+}
+
+function setPlayBtn(playing) {
+  document.getElementById('playIcon').style.display  = playing ? 'none'  : 'block';
+  document.getElementById('pauseIcon').style.display = playing ? 'block' : 'none';
+}
+
+/* ════════════════════════════════════════════════
+   CUSTOM MODAL
+════════════════════════════════════════════════ */
+function openCustomModal() {
+  document.getElementById('customFocus').value = timerState.customFocus;
+  document.getElementById('customBreak').value = timerState.customBreak;
+  document.getElementById('customModal').classList.add('open');
+}
+function closeCustomModal() {
+  document.getElementById('customModal').classList.remove('open');
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === timerState.mode)
+  );
+}
+function applyCustom() {
+  const f = Math.max(1, Math.min(120, parseInt(document.getElementById('customFocus').value)||25));
+  const b = Math.max(1, Math.min(60,  parseInt(document.getElementById('customBreak').value)||5));
+  timerState.customFocus = f;
+  timerState.customBreak = b;
+  pauseTimer();
+  timerState.mode = 'focus';
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
+  document.querySelector('.mode-btn[data-mode="focus"]').classList.add('active');
+  applyModeTime('focus');
+  closeCustomModal();
+  showToast('⚙️', `Set to ${f}m focus / ${b}m break`);
+}
+
+/* ════════════════════════════════════════════════
+   TASKS
+════════════════════════════════════════════════ */
+function addTask() {
+  const inp  = document.getElementById('taskInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  timerState.tasks.unshift({ id: Date.now(), text, done: false });
+  inp.value = '';
+  renderTasks();
+}
+
+function toggleTask(id) {
+  const t = timerState.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) {
+    timerState.tasksDone++;
+    document.getElementById('statTasks').textContent = timerState.tasksDone;
+    saveTaskDoneToFirebase();
+    if (timerState.activeTask?.id === id) clearActiveTask();
+    showToast('✅', 'Task completed!');
+  }
+  renderTasks();
+}
+
+function focusOnTask(id) {
+  const t = timerState.tasks.find(x => x.id === id && !x.done);
+  if (!t) return;
+  pauseTimer();
+  timerState.activeTask = { id: t.id, text: t.text };
+  const bar = document.getElementById('activeTaskBar');
+  bar.classList.add('live');
+  document.getElementById('activeTaskText').textContent = t.text;
+
+  timerState.mode = 'focus';
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode==='focus'));
+  applyModeTime('focus');
+  renderTasks();
+  showToast('🎯', `Focusing: ${t.text.substring(0,32)}${t.text.length>32?'…':''}`);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearActiveTask() {
+  timerState.activeTask = null;
+  document.getElementById('activeTaskBar').classList.remove('live');
+  document.getElementById('activeTaskText').textContent = 'No task selected';
+}
+
+function deleteTask(id) {
+  if (timerState.activeTask?.id === id) clearActiveTask();
+  timerState.tasks = timerState.tasks.filter(t => t.id !== id);
+  renderTasks();
+}
+
+function renderTasks() {
+  const list  = document.getElementById('taskList');
+  const empty = document.getElementById('emptyTaskState');
+  const meta  = document.getElementById('taskMeta');
+  const tasks = timerState.tasks;
+
+  const done  = tasks.filter(t => t.done).length;
+  meta.textContent = tasks.length === 0 ? '0 tasks' : done > 0 ? `${done}/${tasks.length} done` : `${tasks.length} task${tasks.length!==1?'s':''}`;
+
+  if (tasks.length === 0) {
+    list.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+
+  list.innerHTML = tasks.map(t => `
+    <div class="task-item ${t.done?'completed':''} ${timerState.activeTask?.id===t.id?'active-session':''}" id="task-${t.id}">
+      <div class="task-check ${t.done?'checked':''}" onclick="toggleTask(${t.id})">
+        <svg viewBox="0 0 12 12" fill="none" stroke="#0d1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,6 5,9 10,3"/>
+        </svg>
+      </div>
+      <span class="task-text">${escHtml(t.text)}</span>
+      <div class="task-actions">
+        <button class="btn-focus-task" title="Focus on this" onclick="focusOnTask(${t.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <button class="btn-delete-task" title="Delete" onclick="deleteTask(${t.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3,6 5,6 21,6"/>
+            <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════
+   FOCUS ROOM
+════════════════════════════════════════════════ */
+function renderFocusRoom(users) {
+  const list = document.getElementById('focusRoomList');
+  const countEl = document.getElementById('focusingCount');
+  if (!users.length) {
+    list.innerHTML = `<div class="room-empty"><div class="room-empty-icon">🌙</div>No one here yet. Be the first!</div>`;
+    countEl.textContent = '0';
+    return;
+  }
+
+  // Sort: currently focusing first, then by minutes
+  const sorted = [...users].sort((a,b) => {
+    if (a.isFocusing && !b.isFocusing) return -1;
+    if (!a.isFocusing && b.isFocusing) return 1;
+    return (b.minutesFocused||0) - (a.minutesFocused||0);
+  });
+
+  const focusingNow = sorted.filter(u => u.isFocusing).length;
+  countEl.textContent = focusingNow;
+
+  list.innerHTML = sorted.map(u => {
+    const isYou = currentUser && u.id === currentUser.uid;
+    const initials = (u.displayName||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const task = u.focusingTask ? `Working on: ${escHtml(u.focusingTask)}` : (u.isFocusing ? 'In a focus session' : `${u.minutesFocused||0} min focused`);
+    return `
+      <div class="focus-user-card ${u.isFocusing?'is-focusing':''} ${isYou?'is-you':''}">
+        <div class="user-avatar-lg">
+          ${initials}
+          <div class="focus-ring"></div>
+        </div>
+        <div class="focus-user-info">
+          <div class="focus-user-name">${escHtml(u.displayName||'Anonymous')}${isYou?' <span class="lb-you-tag">You</span>':''}</div>
+          <div class="focus-user-task">${task}</div>
+        </div>
+        <div class="focus-status-badge ${u.isFocusing?'status-active':'status-idle'}">
+          ${u.isFocusing ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px rgba(94,175,120,0.8)"></span> Focusing' : 'Idle'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════
+   LEADERBOARD
+════════════════════════════════════════════════ */
+let cachedUsers = [];
+
+function renderLeaderboard(users) {
+  cachedUsers = users;
+  _renderLeaderboardFromCache();
+}
+
+function switchLbPeriod(period, btn) {
+  lbPeriod = period;
+  document.querySelectorAll('.lb-period-btn').forEach((b,i) =>
+    b.classList.toggle('active', (i===0&&period==='allTime')||(i===1&&period==='week'))
+  );
+  _renderLeaderboardFromCache();
+}
+
+function _renderLeaderboardFromCache() {
+  const users = cachedUsers;
+  const podiumEl = document.getElementById('lbPodium');
+  const listEl   = document.getElementById('lbList');
+  const emptyEl  = document.getElementById('lbEmpty');
+
+  if (!users.length) {
+    podiumEl.innerHTML = '';
+    listEl.innerHTML   = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+
+  // Sort by selected period
+  const key    = lbPeriod === 'week' ? 'weekMinutes' : 'minutesFocused';
+  const sorted = [...users].sort((a,b) => (b[key]||0) - (a[key]||0));
+
+  const top3 = sorted.slice(0, 3);
+  const rest = sorted.slice(3);
+
+  // Podium order: 2nd | 1st | 3rd
+  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const rankForSlot = [2, 1, 3];
+
+  podiumEl.innerHTML = podiumOrder.map((u, i) => {
+    if (!u) return '';
+    const rank = rankForSlot[i];
+    const isYou = currentUser && u.id === currentUser.uid;
+    const initials = (u.displayName||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const mins  = u[key] || 0;
+    const crown = rank === 1 ? '<span class="rank-crown">👑</span>' : '';
+    return `
+      <div class="podium-slot">
+        ${crown}
+        <div class="podium-avatar">${initials}</div>
+        <div class="podium-rank-badge rank-${rank}">${rank}</div>
+        <div class="podium-name">${escHtml(u.displayName||'?')}${isYou?' ★':''}</div>
+        <div class="podium-mins">${mins}</div>
+        <div class="podium-mins-label">min</div>
+      </div>
+    `;
+  }).join('');
+
+  listEl.innerHTML = rest.map((u, i) => {
+    const rank  = i + 4;
+    const isYou = currentUser && u.id === currentUser.uid;
+    const initials = (u.displayName||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const mins  = u[key] || 0;
+    return `
+      <div class="lb-row ${isYou?'is-you':''}">
+        <div class="lb-rank-num">${rank}</div>
+        <div class="lb-avatar">${initials}</div>
+        <div class="lb-info">
+          <div class="lb-name">${escHtml(u.displayName||'Anonymous')} ${isYou?'<span class="lb-you-tag">You</span>':''}</div>
+          <div class="lb-sub">${u.sessions||0} sessions</div>
+        </div>
+        <div>
+          <div class="lb-mins">${mins}</div>
+          <div class="lb-mins-label">min</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════ */
+function switchTab(name) {
+  ['Timer','Room','Leader'].forEach(n => {
+    document.getElementById(`tab${n}`).classList.toggle('active', n===name);
+    document.getElementById(`nav${n}`).classList.toggle('active', n===name);
+  });
+}
+
+/* ════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════ */
+let toastT;
+function showToast(icon, msg) {
+  clearTimeout(toastT);
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent  = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  toastT = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ════════════════════════════════════════════════
+   UTILITIES
+════════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getWeekStart() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().substring(0,10);
+}
+
+// Cleanup focusing status when tab/window closes
+window.addEventListener('beforeunload', () => {
+  if (timerState.running) setFocusingStatus(false, '');
+});
+
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+updateTimerDisplay();
+updateRing();
+
+// Show auth screen by default (Firebase listener will override if logged in)
+setTimeout(() => {
+  if (!currentUser) {
+    document.getElementById('spinnerOverlay').classList.add('hidden');
+    document.getElementById('authScreen').classList.remove('hidden');
+  }
+}, 3000);
+</script>
+</body>
+</html>
