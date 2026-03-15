@@ -1,952 +1,554 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
-  <!-- PWA Meta Tags -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="AuraFocus" />
-  <meta name="application-name" content="AuraFocus" />
-  <meta name="theme-color" content="#0a0b10" />
-  <meta name="description" content="Your personal focus timer with badges and streaks" />
-
-  <title>AuraFocus</title>
-
-  <!-- Inline Manifest -->
-  <link rel="manifest" href="data:application/json,{
-    &quot;name&quot;:&quot;AuraFocus&quot;,
-    &quot;short_name&quot;:&quot;AuraFocus&quot;,
-    &quot;description&quot;:&quot;Focus timer with badges and streaks&quot;,
-    &quot;start_url&quot;:&quot;.&quot;,
-    &quot;display&quot;:&quot;standalone&quot;,
-    &quot;background_color&quot;:&quot;#0a0b10&quot;,
-    &quot;theme_color&quot;:&quot;#0a0b10&quot;,
-    &quot;orientation&quot;:&quot;portrait&quot;,
-    &quot;icons&quot;:[
-      {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0b10'/%3E%3Ccircle cx='96' cy='96' r='70' fill='none' stroke='%237c6aff' stroke-width='6'/%3E%3Ctext x='96' y='115' font-size='72' text-anchor='middle'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
-    ]
-  }" />
-
-  <!-- Apple touch icon -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0b10'/%3E%3Ccircle cx='96' cy='96' r='70' fill='none' stroke='%237c6aff' stroke-width='6'/%3E%3Ctext x='96' y='115' font-size='72' text-anchor='middle'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E" />
-
-  <!-- React via CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #0a0b10; overflow: hidden; }
-    #root { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    /* iOS safe area support */
-    body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-
-    /* Splash screen */
-    #splash {
-      position: fixed; inset: 0; background: #0a0b10; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 16px; transition: opacity 0.5s ease;
-    }
-    #splash.hide { opacity: 0; pointer-events: none; }
-    .splash-icon {
-      width: 90px; height: 90px; border-radius: 22px;
-      background: linear-gradient(135deg, #7c6aff, #00d4ff);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 44px;
-      box-shadow: 0 0 60px rgba(124,106,255,0.5);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    .splash-title { font-size: 28px; font-weight: 800; color: #fff; font-family: sans-serif; letter-spacing: -0.5px; }
-    .splash-sub { font-size: 14px; color: rgba(255,255,255,0.4); font-family: sans-serif; }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 40px rgba(124,106,255,0.4); }
-      50% { box-shadow: 0 0 80px rgba(124,106,255,0.8); }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AuraFocus"/>
+<meta name="theme-color" content="#0a0b10"/>
+<title>AuraFocus</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--p:#7c6aff;--c:#00d4ff;--g:#06ffa5;--o:#ff9b54;--pk:#ff6eb4;--bg:#0a0b10;--br:rgba(255,255,255,0.08)}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:#e8e9f0;overflow:hidden}
+#LS{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;background:var(--bg);background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(124,106,255,.2) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 80% 100%,rgba(0,212,255,.12) 0%,transparent 60%)}
+.li{width:88px;height:88px;border-radius:22px;background:linear-gradient(135deg,var(--p),var(--c));display:flex;align-items:center;justify-content:center;font-size:44px;margin-bottom:20px;box-shadow:0 0 60px rgba(124,106,255,.5)}
+.lt{font-size:32px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.ls{font-size:14px;color:rgba(255,255,255,.4);margin-bottom:36px;text-align:center;line-height:1.5}
+.lb{width:100%;max-width:300px}
+.ll{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);margin-bottom:8px;display:block;letter-spacing:.5px}
+.linp{width:100%;padding:15px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);color:#fff;font-size:17px;outline:none;font-family:inherit;margin-bottom:14px;transition:border-color .2s}
+.linp:focus{border-color:var(--p)}
+.linp::placeholder{color:rgba(255,255,255,.2)}
+.lbtn{width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--p),var(--c));color:#fff;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+.lbtn:active{opacity:.85;transform:scale(.98)}
+.ln{font-size:11px;color:rgba(255,255,255,.2);margin-top:16px;text-align:center}
+#AP{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--bg);background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(124,106,255,.12) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 80% 100%,rgba(0,212,255,.08) 0%,transparent 60%)}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--br);background:rgba(10,11,16,.95)}
+.lg{display:flex;align-items:center;gap:10px}
+.lgi{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--p),var(--c));display:flex;align-items:center;justify-content:center;font-size:18px}
+.lgt{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.lgs{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+.hr{display:flex;align-items:center;gap:8px}
+.bb{background:rgba(255,255,255,.06);border:1px solid var(--br);border-radius:8px;padding:7px 9px;cursor:pointer;font-size:16px}
+.bb.on{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35)}
+.xb{background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:18px;padding:4px}
+.tabs{display:flex;overflow-x:auto;background:rgba(10,11,16,.95);border-bottom:1px solid var(--br);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:4px;padding:10px 11px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;border:none;background:none;color:rgba(255,255,255,.38);border-bottom:2px solid transparent;transition:all .2s;flex-shrink:0;font-family:inherit}
+.tab.active{color:var(--c);border-bottom-color:var(--c)}
+.cnt{flex:1;overflow-y:auto;padding:16px 14px 80px;-webkit-overflow-scrolling:touch}
+.cnt::-webkit-scrollbar{display:none}
+.card{background:rgba(255,255,255,.04);border-radius:16px;border:1px solid var(--br);padding:16px;margin-bottom:12px}
+.ct{font-size:17px;font-weight:700;margin-bottom:5px}
+.cs{font-size:12px;color:rgba(255,255,255,.45);line-height:1.55}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
+.btn:active{opacity:.85}
+.bp{background:linear-gradient(135deg,var(--p),var(--c));color:#fff}
+.bg{background:rgba(255,255,255,.05);border:1px solid var(--br);color:rgba(255,255,255,.55)}
+.inp{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--br);background:rgba(255,255,255,.05);color:#e8e9f0;font-size:13px;outline:none;font-family:inherit}
+.inp::placeholder{color:rgba(255,255,255,.2)}
+.hide{display:none!important}
+.tm{display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.04);border-radius:12px;padding:4px}
+.mb{flex:1;padding:8px 4px;border-radius:9px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:transparent;color:rgba(255,255,255,.42);transition:all .2s;font-family:inherit}
+.rw{display:flex;justify-content:center;margin-bottom:20px;position:relative}
+.rw svg{transform:rotate(-90deg)}
+.rt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.bt{font-size:50px;font-weight:800;letter-spacing:-2px;color:#fff;line-height:1;font-variant-numeric:tabular-nums}
+.cr{display:flex;gap:10px;margin-bottom:14px}
+.sr{display:flex;justify-content:space-around;padding:12px 0}
+.sv{font-size:22px;font-weight:800;text-align:center}
+.sl{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px;text-align:center}
+.bc{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);margin-bottom:8px}
+.bc.e{border-color:rgba(124,106,255,.3);background:rgba(124,106,255,.07)}
+.bc.f{border-color:#ffd166;background:rgba(255,209,102,.08);box-shadow:0 0 20px rgba(255,209,102,.2)}
+.bi{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;filter:grayscale(1) opacity(.2)}
+.bi.e{filter:none;background:rgba(255,255,255,.08)}
+.ob{height:280px;position:relative;overflow:hidden;border-radius:14px;background:radial-gradient(circle at 50% 50%,rgba(124,106,255,.08) 0%,transparent 70%);margin-bottom:12px}
+.star{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)}
+.sb{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid}
+.sl2{font-size:10px;color:rgba(255,255,255,.7);margin-top:4px;white-space:nowrap}
+.ar{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid var(--br)}
+.tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.tg{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tg.on{background:var(--p)}
+.tk{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.tg.on .tk{left:20px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:50;display:flex;align-items:flex-end}
+.mo{background:#13141c;border-radius:20px 20px 0 0;padding:22px;width:100%;border:1px solid var(--br);border-bottom:none}
+.vg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.vb{padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit}
+.vb.s{border-color:var(--p);background:rgba(124,106,255,.2)}
+.nb{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);margin-bottom:12px}
+.pg{height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin:10px 0 4px}
+.pf{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--p),#ffd166);transition:width .5s}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1c1d2e;border:1px solid rgba(124,106,255,.4);color:#fff;padding:11px 18px;border-radius:12px;font-size:12px;font-weight:600;z-index:999;box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;max-width:90vw;pointer-events:none;animation:su .3s ease}
+@keyframes su{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
 </head>
 <body>
-  <!-- Splash Screen -->
-  <div id="splash">
-    <div class="splash-icon">🚀</div>
-    <div class="splash-title">AuraFocus</div>
-    <div class="splash-sub">Loading your focus space...</div>
+
+<!-- LOGIN -->
+<div id="LS">
+  <div class="li">🚀</div>
+  <div class="lt">AuraFocus</div>
+  <div class="ls">Your personal focus timer<br>with streaks &amp; badges</div>
+  <div class="lb">
+    <label class="ll">YOUR USERNAME</label>
+    <input class="linp" id="UI" placeholder="e.g. Mukul, Alex, Sam..." maxlength="20"/>
+    <button class="lbtn" id="LBTN">🚀 Start Focusing</button>
+    <div class="ln">Your name is saved on this device only</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="AP" class="hide">
+  <div class="hdr">
+    <div class="lg">
+      <div class="lgi">🚀</div>
+      <div>
+        <div class="lgt">AuraFocus</div>
+        <div class="lgs" id="HS">@User · 🔥 0 day streak</div>
+      </div>
+    </div>
+    <div class="hr">
+      <button class="bb" id="BL" onclick="tBell()">🔔</button>
+      <button class="xb" onclick="logout()" title="Switch user">👤</button>
+    </div>
   </div>
 
-  <div id="root"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="go('TM',this)">🚀 Timer</button>
+    <button class="tab" onclick="go('OR',this)">👥 Orbit</button>
+    <button class="tab" onclick="go('BA',this)" id="BT">🏅 Badges</button>
+    <button class="tab" onclick="go('AL',this)">💬 Alibi</button>
+    <button class="tab" onclick="go('PA',this)">🤝 Pact</button>
+    <button class="tab" onclick="go('VI',this)">😊 Vibes</button>
+    <button class="tab" onclick="go('SE',this)">⚙️ Settings</button>
+  </div>
 
-  <!-- Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('install', e => self.skipWaiting());
-        self.addEventListener('activate', e => clients.claim());
-        self.addEventListener('fetch', e => {
-          e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-        });
-      `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(() => {});
-    }
+  <div class="cnt">
 
-    // Hide splash after app loads
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const splash = document.getElementById('splash');
-        if (splash) {
-          splash.classList.add('hide');
-          setTimeout(() => splash.remove(), 500);
-        }
-      }, 1800);
-    });
-  </script>
+    <!-- TIMER -->
+    <div id="TM">
+      <div class="nb" id="NB">
+        <span style="font-size:20px">🔔</span>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">Enable Notifications</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Get alerts when sessions end</div></div>
+        <button onclick="rNotif()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--c);color:#0a0b10;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit">Enable</button>
+      </div>
+      <div class="tm">
+        <button class="mb" id="mw" onclick="sMode('work')" style="background:var(--p);color:#0a0b10">Focus</button>
+        <button class="mb" id="ms" onclick="sMode('short')">Short Break</button>
+        <button class="mb" id="ml" onclick="sMode('long')">Long Break</button>
+      </div>
+      <div class="rw">
+        <svg width="260" height="260">
+          <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+          <circle id="ARC" cx="130" cy="130" r="120" fill="none" stroke="var(--p)" stroke-width="10" stroke-dasharray="753.98" stroke-dashoffset="753.98" stroke-linecap="round" style="transition:stroke-dashoffset .5s"/>
+        </svg>
+        <div class="rt">
+          <div class="bt" id="TD">25:00</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:5px;font-weight:600" id="ML">Focus</div>
+          <div style="font-size:11px;margin-top:3px;color:var(--p)" id="SN">Session #1</div>
+        </div>
+      </div>
+      <div class="cr">
+        <button class="btn bp" id="SB" onclick="tRun()" style="flex:2">▶ Start Focus</button>
+        <button class="btn bg" onclick="rst()" style="flex:1">↺</button>
+      </div>
+      <div class="card">
+        <div class="sr">
+          <div><div class="sv" id="SS" style="color:var(--p)">0</div><div class="sl">Sessions</div></div>
+          <div><div class="sv" id="SM" style="color:var(--c)">0</div><div class="sl">Minutes</div></div>
+          <div><div class="sv" id="SK" style="color:#ff6b35">0d</div><div class="sl">🔥 Streak</div></div>
+        </div>
+      </div>
+      <div class="card hide" id="BST">
+        <div style="font-size:12px;font-weight:700;margin-bottom:9px;color:#ffd166">🏅 Badges Earned</div>
+        <div id="BSI" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+      </div>
+    </div>
 
-  <script type="text/babel">
+    <!-- ORBIT -->
+    <div id="OR" class="hide">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="ct">⚡ Focus Orbit</div>
+          <div style="text-align:right"><div id="OC" style="font-size:28px;font-weight:800;color:var(--c);line-height:1">0</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Active Now</div></div>
+        </div>
+        <p class="cs">Each glowing star is someone focusing right now ⭐</p>
+      </div>
+      <div class="ob">
+        <div class="star" style="left:50%;top:50%">
+          <div class="sb" style="width:52px;height:52px;background:radial-gradient(circle,rgba(124,106,255,.8),rgba(124,106,255,.27));box-shadow:0 0 20px 8px rgba(124,106,255,.4);border-color:rgba(124,106,255,.6)">⭐</div>
+          <div class="sl2" id="YL">You</div>
+        </div>
+        <div id="OS" class="hide">
+          <div class="star" style="left:20%;top:25%"><div class="sb" style="width:38px;height:38px;background:radial-gradient(circle,rgba(0,212,255,.8),rgba(0,212,255,.27));box-shadow:0 0 14px 5px rgba(0,212,255,.4);border-color:rgba(0,212,255,.6)">✨</div><div class="sl2">Alex</div></div>
+          <div class="star" style="left:72%;top:18%"><div class="sb" style="width:38px;height:38px;background:radial-gradient(circle,rgba(255,110,180,.8),rgba(255,110,180,.27));box-shadow:0 0 14px 5px rgba(255,110,180,.4);border-color:rgba(255,110,180,.6)">✨</div><div class="sl2">Sam</div></div>
+          <div class="star" style="left:58%;top:68%"><div class="sb" style="width:38px;height:38px;background:radial-gradient(circle,rgba(6,255,165,.8),rgba(6,255,165,.27));box-shadow:0 0 14px 5px rgba(6,255,165,.4);border-color:rgba(6,255,165,.6)">✨</div><div class="sl2">Jordan</div></div>
+          <div class="star" style="left:28%;top:70%"><div class="sb" style="width:38px;height:38px;background:radial-gradient(circle,rgba(255,209,102,.8),rgba(255,209,102,.27));box-shadow:0 0 14px 5px rgba(255,209,102,.4);border-color:rgba(255,209,102,.6)">✨</div><div class="sl2">Riley</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;margin-bottom:9px;color:rgba(255,255,255,.55)">🎵 Focus Music</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none">
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(255,107,53,.2);border:1px solid rgba(255,107,53,.5);color:#fff">🔥 High Energy</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(124,106,255,.2);border:1px solid rgba(124,106,255,.5);color:#fff">💜 Lo-Fi</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(0,212,255,.2);border:1px solid rgba(0,212,255,.5);color:#fff">🌊 Deep Work</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(6,255,165,.2);border:1px solid rgba(6,255,165,.5);color:#fff">🌿 Nature</span>
+        </div>
+      </div>
+    </div>
 
-const { useState, useEffect, useRef, useCallback } = React;
+    <!-- BADGES -->
+    <div id="BA" class="hide">
+      <div class="card" style="background:linear-gradient(135deg,rgba(124,106,255,.14),rgba(0,212,255,.07));border-color:rgba(124,106,255,.28)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+          <div><div style="font-size:34px;font-weight:800;color:#ffd166;line-height:1"><span id="BCN">0</span><span style="font-size:15px;color:rgba(255,255,255,.35);font-weight:500">/11</span></div><div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:3px">Badges Unlocked</div></div>
+          <div style="text-align:right"><div style="font-size:26px;font-weight:800;color:#ff6b35;line-height:1">🔥 <span id="BKS">0</span></div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Day Streak</div></div>
+        </div>
+        <div class="pg"><div class="pf" id="BP" style="width:0%"></div></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.3)" id="BR">11 to unlock</div>
+      </div>
+      <button class="btn bg" onclick="sim()" style="margin-bottom:12px;font-size:12px;border-style:dashed">＋ Simulate Session (testing)</button>
+      <div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#ffd166">🏅 All Badges</div><div id="BL2"></div></div>
+    </div>
 
+    <!-- ALIBI -->
+    <div id="AL" class="hide">
+      <div class="card"><div class="ct">💬 Alibi Messages</div><p class="cs">Auto-reply messages for when you're in deep focus mode.</p></div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:9px">Add Message</div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="AI" placeholder="e.g., In focus mode, brb! ⚡" style="flex:1" onkeydown="if(event.key==='Enter')aA()"/>
+          <button onclick="aA()" style="padding:0 14px;border-radius:10px;border:none;background:var(--p);color:#fff;cursor:pointer;font-size:20px;font-family:inherit">+</button>
+        </div>
+      </div>
+      <div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:9px">Your Messages</div><div id="ALI"></div></div>
+      <button class="btn" style="background:linear-gradient(135deg,#b06aff,var(--pk));color:#fff">💾 Save Messages</button>
+    </div>
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-const RocketIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-  </svg>
-);
-const UsersIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-const MessageIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const LinkIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-  </svg>
-);
-const SmileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/>
-    <line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-  </svg>
-);
-const GearIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-);
-const SparkleIcon = ({ size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3l1.88 5.76a1 1 0 0 0 .95.69h6.06l-4.9 3.56a1 1 0 0 0-.36 1.12L17.5 20l-4.9-3.56a1 1 0 0 0-1.18 0L6.5 20l1.87-5.87a1 1 0 0 0-.36-1.12L3.11 9.45h6.06a1 1 0 0 0 .95-.69L12 3z"/>
-  </svg>
-);
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-);
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-);
-const CopyIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-);
-const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-  </svg>
-);
-const BellIcon = ({ size = 16, off = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    {off
-      ? <><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></>
-      : <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>
-    }
-  </svg>
-);
-const TrophyIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/>
-    <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>
-  </svg>
-);
+    <!-- PACT -->
+    <div id="PA" class="hide">
+      <div class="card"><div class="ct">🤝 Accountability Pact</div><p class="cs">Link a friend who gets notified if you break your session early.</p></div>
+      <div class="card" id="PF">
+        <div style="font-size:13px;font-weight:700;margin-bottom:9px">Link a Friend</div>
+        <input class="inp" id="PI" placeholder="Enter friend's username" style="margin-bottom:10px"/>
+        <button class="btn" onclick="lP()" style="background:linear-gradient(135deg,var(--o),#ff6b35);color:#fff">🔗 Link Pact</button>
+      </div>
+      <div class="card hide" id="PAC" style="border:1px solid rgba(6,255,165,.28);background:rgba(6,255,165,.05)">
+        <div style="font-size:13px;color:var(--g);font-weight:700;margin-bottom:5px">✅ Pact Active</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7)">Linked with <strong id="PN"></strong></div>
+        <div style="font-size:12px;color:rgba(255,255,255,.38);margin-top:3px">They'll be notified if you quit early.</div>
+        <button onclick="rP()" style="margin-top:12px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:rgba(255,80,80,.08);color:#ff5050;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Remove Pact</button>
+      </div>
+      <div class="card" style="border:1px solid rgba(255,209,102,.18)"><div style="font-size:12px;font-weight:700;color:#ffd166;margin-bottom:5px">⚠️ How it works</div><div style="font-size:12px;color:rgba(255,255,255,.38);line-height:1.6">When you break a focus session early, your accountability friend gets a notification!</div></div>
+    </div>
 
-// ─── Push Notification Helper ─────────────────────────────────────────────────
-function sendNotification(title, body) {
-  if (typeof window === "undefined") return;
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "granted") {
-    try { new Notification(title, { body }); } catch(e) {}
+    <!-- VIBE -->
+    <div id="VI" class="hide">
+      <div class="card"><div class="ct">😊 Vibe-Check Feed</div><p class="cs">Post-session moods from the AuraFocus community.</p></div>
+      <div class="card" id="VE" style="text-align:center;padding:36px 20px"><div style="font-size:36px;margin-bottom:10px">✨</div><div style="font-size:14px;font-weight:700;margin-bottom:5px">No vibes yet</div><div style="font-size:12px;color:rgba(255,255,255,.38)">Complete a session and share your mood!</div></div>
+      <div id="VF"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="SE" class="hide">
+      <div class="card"><div class="ct">⚙️ Settings</div><p class="cs">Customize your timer and notifications.</p></div>
+      <div class="card" style="border:1px solid rgba(124,106,255,.2)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--p)">👤 Account</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px">Logged in as <strong id="AN" style="color:#fff"></strong></div>
+        <button onclick="logout()" class="btn bg" style="font-size:12px">🚪 Switch Account</button>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--c)">🔔 Notifications</div>
+        <div class="tr"><div style="font-size:13px;color:rgba(255,255,255,.65)">Session complete</div><div class="tg on" onclick="this.classList.toggle('on')"><div class="tk"></div></div></div>
+        <div class="tr"><div style="font-size:13px;color:rgba(255,255,255,.65)">Halfway reminder</div><div class="tg on" onclick="this.classList.toggle('on')"><div class="tk"></div></div></div>
+        <div class="tr"><div style="font-size:13px;color:rgba(255,255,255,.65)">Break over alert</div><div class="tg on" onclick="this.classList.toggle('on')"><div class="tk"></div></div></div>
+        <button class="btn bg" onclick="rNotif()" style="margin-top:8px;font-size:12px" id="NSB">🔔 Enable Notifications</button>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:13px;color:var(--p)">🕐 Timer Durations</div>
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Work</span><span style="font-size:19px;font-weight:800;color:var(--p)"><span id="WV">25</span> <span style="font-size:11px;color:rgba(255,255,255,.3)">min</span></span></div>
+          <input type="range" min="5" max="120" value="25" style="width:100%;accent-color:var(--p)" oninput="wM=+this.value;document.getElementById('WV').textContent=this.value"/>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Short Break</span><span style="font-size:19px;font-weight:800;color:var(--g)"><span id="SV">5</span> <span style="font-size:11px;color:rgba(255,255,255,.3)">min</span></span></div>
+          <input type="range" min="1" max="30" value="5" style="width:100%;accent-color:var(--g)" oninput="sM=+this.value;document.getElementById('SV').textContent=this.value"/>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Long Break</span><span style="font-size:19px;font-weight:800;color:var(--c)"><span id="LV">15</span> <span style="font-size:11px;color:rgba(255,255,255,.3)">min</span></span></div>
+          <input type="range" min="5" max="60" value="15" style="width:100%;accent-color:var(--c)" oninput="lM=+this.value;document.getElementById('LV').textContent=this.value"/>
+        </div>
+      </div>
+      <button class="btn bp" onclick="svS()">💾 Save Settings</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- VIBE MODAL -->
+<div class="ov hide" id="VM">
+  <div class="mo">
+    <div style="font-size:20px;font-weight:800;margin-bottom:4px">🎉 Session Complete!</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px">How was your focus session?</div>
+    <div class="vg">
+      <button class="vb" onclick="pM(this,'🔥 Crushed it')">🔥 Crushed it</button>
+      <button class="vb" onclick="pM(this,'😌 In the zone')">😌 In the zone</button>
+      <button class="vb" onclick="pM(this,'🧠 Deep focus')">🧠 Deep focus</button>
+      <button class="vb" onclick="pM(this,'😤 Struggled')">😤 Struggled</button>
+      <button class="vb" onclick="pM(this,'🎯 Nailed goals')">🎯 Nailed goals</button>
+      <button class="vb" onclick="pM(this,'😴 Tired but done')">😴 Tired but done</button>
+    </div>
+    <button class="btn bp" id="VS" onclick="subV()">Skip</button>
+  </div>
+</div>
+
+<script>
+// State
+var mode='work',run=false,tL=25*60,tI=null;
+var ses=0,totM=0,str=0,wM=25,sM=5,lM=15;
+var moo=null,nOn=false,usr='';
+var alib=["In deep focus mode, back in a bit! ⚡","Heads down — will reply after my session 🎯"];
+var vib=[],ern=new Set(),frsh=new Set();
+var C=753.98;
+var MC={'🔥 Crushed it':'#ff6b35','😌 In the zone':'#06ffa5','🧠 Deep focus':'#7c6aff','😤 Struggled':'#ffd166','🎯 Nailed goals':'#00d4ff','😴 Tired but done':'#ff6eb4'};
+var BDG=[
+  {id:'s1',i:'🌱',n:'First Step',d:'Complete your first focus session',c:function(s){return s>=1}},
+  {id:'s5',i:'🔥',n:'On Fire',d:'Complete 5 focus sessions',c:function(s){return s>=5}},
+  {id:'s10',i:'⚡',n:'Electrified',d:'Complete 10 focus sessions',c:function(s){return s>=10}},
+  {id:'s25',i:'💎',n:'Diamond Grind',d:'Complete 25 focus sessions',c:function(s){return s>=25}},
+  {id:'s50',i:'🏆',n:'Focus Legend',d:'Complete 50 focus sessions',c:function(s){return s>=50}},
+  {id:'r3',i:'📆',n:'3-Day Streak',d:'Focus 3 days in a row',c:function(s,r){return r>=3}},
+  {id:'r7',i:'🗓️',n:'Week Warrior',d:'Focus 7 days in a row',c:function(s,r){return r>=7}},
+  {id:'r30',i:'🌟',n:'Month Master',d:'Focus 30 days in a row',c:function(s,r){return r>=30}},
+  {id:'owl',i:'🦉',n:'Night Owl',d:'Complete a session after 10pm',c:function(s,r,h){return h>=22}},
+  {id:'bird',i:'🐦',n:'Early Bird',d:'Complete a session before 7am',c:function(s,r,h){return h<7}},
+  {id:'haul',i:'🚀',n:'Long Haul',d:'Accumulate 500 total focus minutes',c:function(s,r,h,m){return m>=500}},
+];
+
+// Login
+document.getElementById('LBTN').onclick = function(){
+  var v = document.getElementById('UI').value.trim();
+  if(!v){ document.getElementById('UI').focus(); return; }
+  usr = v;
+  localStorage.setItem('afu', v);
+  startApp();
+};
+document.getElementById('UI').onkeydown = function(e){
+  if(e.key==='Enter') document.getElementById('LBTN').click();
+};
+
+function startApp(){
+  document.getElementById('LS').classList.add('hide');
+  document.getElementById('AP').classList.remove('hide');
+  document.getElementById('HS').textContent = '@'+usr+' · 🔥 '+str+' day streak';
+  document.getElementById('AN').textContent = usr;
+  document.getElementById('YL').textContent = usr;
+  if('Notification' in window && Notification.permission==='granted'){
+    nOn=true;
+    document.getElementById('NB').classList.add('hide');
+    document.getElementById('BL').classList.add('on');
+  }
+  rAlib(); rBdg();
+}
+
+function logout(){
+  localStorage.removeItem('afu');
+  document.getElementById('AP').classList.add('hide');
+  document.getElementById('LS').classList.remove('hide');
+  document.getElementById('UI').value='';
+  run=false; clearInterval(tI);
+  ses=0; totM=0; str=0; tL=wM*60;
+  ern=new Set(); frsh=new Set(); vib=[];
+  updD(); updS();
+}
+
+// Check saved user
+(function(){
+  var s=localStorage.getItem('afu');
+  if(s){ usr=s; startApp(); }
+})();
+
+// Timer
+function dur(){ return mode==='work'?wM:mode==='short'?sM:lM; }
+function fmt(s){ return ('0'+Math.floor(s/60)).slice(-2)+':'+('0'+(s%60)).slice(-2); }
+
+function go(id, btn){
+  ['TM','OR','BA','AL','PA','VI','SE'].forEach(function(x){ document.getElementById(x).classList.add('hide'); });
+  document.getElementById(id).classList.remove('hide');
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function sMode(m){
+  mode=m; run=false; clearInterval(tI);
+  document.getElementById('SB').textContent='▶ Start Focus';
+  var c={work:'var(--p)',short:'var(--g)',long:'var(--c)'};
+  var l={work:'Focus',short:'Short Break',long:'Long Break'};
+  document.getElementById('ARC').style.stroke=c[m];
+  document.getElementById('ML').textContent=l[m];
+  document.getElementById('SN').style.color=c[m];
+  ['work','short','long'].forEach(function(x){
+    var b=document.getElementById('m'+x[0]);
+    if(x===m){b.style.background=c[m];b.style.color='#0a0b10';}
+    else{b.style.background='transparent';b.style.color='rgba(255,255,255,.42)';}
+  });
+  tL=dur()*60; updD();
+  document.getElementById('OS').classList.add('hide');
+  document.getElementById('OC').textContent='0';
+}
+
+function updD(){
+  var tot=dur()*60, p=(tot-tL)/tot;
+  document.getElementById('ARC').style.strokeDashoffset=C-(p*C);
+  document.getElementById('TD').textContent=fmt(tL);
+  document.getElementById('SN').textContent='Session #'+(ses+1);
+}
+
+function tRun(){
+  if(run){
+    run=false; clearInterval(tI);
+    document.getElementById('SB').textContent='▶ Start Focus';
+  } else {
+    run=true;
+    document.getElementById('SB').textContent='⏸ Pause';
+    sN('▶ Focus Started 🎯','Stay locked in, '+usr+'!');
+    document.getElementById('OS').classList.remove('hide');
+    document.getElementById('OC').textContent='5';
+    tI=setInterval(tick,1000);
   }
 }
 
-// ─── Badge Definitions ────────────────────────────────────────────────────────
-const ALL_BADGES = [
-  { id:"first_session", icon:"🌱", name:"First Step",     desc:"Complete your first focus session",   check:(s)        => s >= 1 },
-  { id:"sessions_5",    icon:"🔥", name:"On Fire",         desc:"Complete 5 focus sessions",            check:(s)        => s >= 5 },
-  { id:"sessions_10",   icon:"⚡", name:"Electrified",     desc:"Complete 10 focus sessions",           check:(s)        => s >= 10 },
-  { id:"sessions_25",   icon:"💎", name:"Diamond Grind",   desc:"Complete 25 focus sessions",           check:(s)        => s >= 25 },
-  { id:"sessions_50",   icon:"🏆", name:"Focus Legend",    desc:"Complete 50 focus sessions",           check:(s)        => s >= 50 },
-  { id:"streak_3",      icon:"📆", name:"3-Day Streak",    desc:"Focus 3 days in a row",                check:(_,str)    => str >= 3 },
-  { id:"streak_7",      icon:"🗓️", name:"Week Warrior",    desc:"Focus 7 days in a row",                check:(_,str)    => str >= 7 },
-  { id:"streak_30",     icon:"🌟", name:"Month Master",    desc:"Focus 30 days in a row",               check:(_,str)    => str >= 30 },
-  { id:"night_owl",     icon:"🦉", name:"Night Owl",       desc:"Complete a session after 10pm",        check:(_,__,h)   => h >= 22 },
-  { id:"early_bird",    icon:"🐦", name:"Early Bird",      desc:"Complete a session before 7am",        check:(_,__,h)   => h < 7 },
-  { id:"long_haul",     icon:"🚀", name:"Long Haul",       desc:"Accumulate 500 total focus minutes",   check:(_,__,___,m) => m >= 500 },
-];
-
-// ─── Circular Progress ────────────────────────────────────────────────────────
-function CircularProgress({ progress, size = 260, strokeWidth = 10, color, children }) {
-  const r = (size - strokeWidth * 2) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (progress / 100) * circ;
-  return (
-    <div style={{ position:"relative", width:size, height:size }}>
-      <svg width={size} height={size} style={{ transform:"rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition:"stroke-dashoffset 0.8s ease" }} />
-      </svg>
-      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ─── Focus Star ───────────────────────────────────────────────────────────────
-function FocusStar({ x, y, name, isYou }) {
-  const [pulse, setPulse] = useState(false);
-  useEffect(() => {
-    const t = setInterval(() => setPulse(p => !p), 1800 + Math.random() * 1200);
-    return () => clearInterval(t);
-  }, []);
-  const color = isYou ? "#7c6aff" : ["#00d4ff","#ff6eb4","#ffd166","#06ffa5","#ff9b54"][Math.floor(Math.random()*5)];
-  return (
-    <div style={{ position:"absolute", left:`${x}%`, top:`${y}%`, transform:"translate(-50%,-50%)", textAlign:"center", zIndex:2 }}>
-      <div style={{
-        width:isYou?52:38, height:isYou?52:38, borderRadius:"50%",
-        background:`radial-gradient(circle, ${color}cc, ${color}44)`,
-        boxShadow:`0 0 ${pulse?24:14}px ${pulse?12:6}px ${color}66`,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        transition:"box-shadow 0.8s ease", border:`2px solid ${color}99`,
-      }}>
-        <SparkleIcon size={isYou?22:16} />
-      </div>
-      <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:4, whiteSpace:"nowrap" }}>{name}</div>
-    </div>
-  );
-}
-
-// ─── Badge Card ───────────────────────────────────────────────────────────────
-function BadgeCard({ badge, earned, newlyEarned }) {
-  return (
-    <div style={{
-      display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:14,
-      border:`1px solid ${earned ? (newlyEarned ? "#ffd166" : "rgba(124,106,255,0.3)") : "rgba(255,255,255,0.06)"}`,
-      background: earned ? (newlyEarned ? "rgba(255,209,102,0.08)" : "rgba(124,106,255,0.07)") : "rgba(255,255,255,0.02)",
-      marginBottom:8, transition:"all 0.4s",
-      boxShadow: newlyEarned ? "0 0 20px rgba(255,209,102,0.2)" : "none",
-    }}>
-      <div style={{
-        fontSize:24, width:46, height:46, borderRadius:12, flexShrink:0,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        background: earned ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
-        filter: earned ? "none" : "grayscale(1) opacity(0.25)",
-      }}>{badge.icon}</div>
-      <div style={{ flex:1 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:2 }}>
-          <div style={{ fontSize:13, fontWeight:700, color: earned ? "#fff" : "rgba(255,255,255,0.28)" }}>{badge.name}</div>
-          {newlyEarned && <span style={{ fontSize:9, background:"#ffd166", color:"#0a0b10", padding:"2px 6px", borderRadius:20, fontWeight:800, letterSpacing:0.3 }}>NEW!</span>}
-        </div>
-        <div style={{ fontSize:11, color: earned ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)" }}>{badge.desc}</div>
-      </div>
-      {earned && <div style={{ fontSize:16, color:"#06ffa5" }}>✓</div>}
-    </div>
-  );
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ msg, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 3500); return () => clearTimeout(t); }, []);
-  return (
-    <div style={{
-      position:"fixed", bottom:88, left:"50%", transform:"translateX(-50%)",
-      background:"linear-gradient(135deg, #1c1d2e, #14152a)",
-      border:"1px solid rgba(124,106,255,0.4)",
-      color:"#fff", padding:"11px 18px", borderRadius:12, fontSize:12,
-      fontWeight:600, zIndex:999, boxShadow:"0 4px 24px rgba(0,0,0,0.5)",
-      whiteSpace:"nowrap", animation:"slideUp 0.3s ease", maxWidth:"90vw",
-    }}>{msg}</div>
-  );
-}
-
-const MOODS = [
-  { label:"🔥 Crushed it",    color:"#ff6b35" },
-  { label:"😌 In the zone",   color:"#06ffa5" },
-  { label:"🧠 Deep focus",    color:"#7c6aff" },
-  { label:"😤 Struggled",     color:"#ffd166" },
-  { label:"🎯 Nailed goals",  color:"#00d4ff" },
-  { label:"😴 Tired but done",color:"#ff6eb4" },
-];
-
-// ─── Main App ─────────────────────────────────────────────────────────────────
-function AuraFocus() {
-  const [tab, setTab] = useState("timer");
-  const [username] = useState("GoTuber");
-
-  // Timer
-  const [settings, setSettings]         = useState({ work:25, short:5, long:15 });
-  const [editSettings, setEditSettings] = useState({ work:25, short:5, long:15 });
-  const [mode, setMode]                 = useState("work");
-  const [timeLeft, setTimeLeft]         = useState(25 * 60);
-  const [running, setRunning]           = useState(false);
-  const [sessions, setSessions]         = useState(0);
-  const [totalMins, setTotalMins]       = useState(0);
-  const intervalRef = useRef(null);
-
-  // Streak & badges
-  const [streak, setStreak]               = useState(2);
-  const [lastFocusDay, setLastFocusDay]   = useState(null);
-  const [earnedBadges, setEarnedBadges]   = useState(new Set());
-  const [newBadges, setNewBadges]         = useState(new Set());
-
-  // Notifications
-  const [notifPermission, setNotifPermission] = useState("default");
-  const [notifEnabled, setNotifEnabled]       = useState(true);
-  const [toasts, setToasts]                   = useState([]);
-
-  // Alibi
-  const [alibiInput, setAlibiInput] = useState("");
-  const [alibis, setAlibis]         = useState(["In deep focus mode, back in a bit! ⚡","Heads down — will reply after my session 🎯"]);
-  const [copiedIdx, setCopiedIdx]   = useState(null);
-
-  // Pact
-  const [pactFriend, setPactFriend]   = useState("");
-  const [linkedFriend, setLinkedFriend] = useState(null);
-
-  // Vibe
-  const [vibes, setVibes]               = useState([]);
-  const [selectedMood, setSelectedMood] = useState(null);
-  const [showVibePrompt, setShowVibePrompt] = useState(false);
-
-  const focusers = [
-    { name:"Alex", x:20, y:25 },{ name:"Sam", x:72, y:18 },
-    { name:"Jordan", x:58, y:68 },{ name:"Riley", x:30, y:72 },
-  ];
-
-  // ── Notification permission ──
-  useEffect(() => {
-    if ("Notification" in window) setNotifPermission(Notification.permission);
-  }, []);
-
-  const requestNotifPermission = async () => {
-    if (!("Notification" in window)) { addToast("❌ Browser doesn't support notifications"); return; }
-    const perm = await Notification.requestPermission();
-    setNotifPermission(perm);
-    if (perm === "granted") addToast("🔔 Notifications enabled!");
-    else addToast("❌ Notifications denied");
-  };
-
-  const addToast = (msg) => {
-    const id = Date.now() + Math.random();
-    setToasts(t => [...t.slice(-2), { id, msg }]);
-  };
-
-  const notify = useCallback((title, body) => {
-    if (!notifEnabled) return;
-    sendNotification(title, body);
-    addToast(`${title}`);
-  }, [notifEnabled]);
-
-  // ── Badge checker ──
-  const checkBadges = useCallback((s, str, mins) => {
-    const hour = new Date().getHours();
-    const newly = new Set();
-    ALL_BADGES.forEach(b => {
-      if (!earnedBadges.has(b.id) && b.check(s, str, hour, mins)) newly.add(b.id);
-    });
-    if (newly.size > 0) {
-      setEarnedBadges(prev => new Set([...prev, ...newly]));
-      setNewBadges(newly);
-      newly.forEach(id => {
-        const b = ALL_BADGES.find(x => x.id === id);
-        if (b) notify(`${b.icon} Badge Unlocked!`, `You earned "${b.name}"`);
-      });
-      setTimeout(() => setNewBadges(new Set()), 8000);
-    }
-  }, [earnedBadges, notify]);
-
-  // ── Timer helpers ──
-  const totalSeconds  = mode === "work" ? settings.work*60 : mode === "short" ? settings.short*60 : settings.long*60;
-  const progress      = ((totalSeconds - timeLeft) / totalSeconds) * 100;
-  const modeColor     = mode === "work" ? "#7c6aff" : mode === "short" ? "#06ffa5" : "#00d4ff";
-  const modeLabel     = mode === "work" ? "Focus" : mode === "short" ? "Short Break" : "Long Break";
-  const formatTime    = (s) => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-
-  const resetTimer = (m = mode, s = settings) => {
-    clearInterval(intervalRef.current);
-    setRunning(false);
-    setTimeLeft((m==="work" ? s.work : m==="short" ? s.short : s.long) * 60);
-  };
-
-  const switchMode = (m) => {
-    setMode(m); clearInterval(intervalRef.current); setRunning(false);
-    setTimeLeft((m==="work" ? settings.work : m==="short" ? settings.short : settings.long) * 60);
-  };
-
-  const handleStartStop = () => {
-    if (!running) notify("▶ Focus Started 🎯", `${modeLabel} — stay locked in!`);
-    setRunning(r => !r);
-  };
-
-  // ── Tick ──
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft(t => {
-          // Halfway nudge
-          if (t === Math.floor(totalSeconds / 2) && mode === "work") {
-            notify("⏱ Halfway There!", "Keep pushing — you got this!");
-          }
-          if (t <= 1) {
-            clearInterval(intervalRef.current);
-            setRunning(false);
-            if (mode === "work") {
-              setSessions(prev => {
-                const newS = prev + 1;
-                setTotalMins(m => {
-                  const newM = m + settings.work;
-                  setStreak(str => {
-                    const today = new Date().toDateString();
-                    const newStr = lastFocusDay !== today ? str + 1 : str;
-                    if (lastFocusDay !== today) setLastFocusDay(today);
-                    checkBadges(newS, newStr, newM);
-                    return newStr;
-                  });
-                  return newM;
-                });
-                return newS;
-              });
-              notify("🎉 Session Complete!", "Time for a well-earned break!");
-              setShowVibePrompt(true);
-            } else {
-              notify("⏰ Break Over!", "Back to focus mode 🚀");
-            }
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
+function tick(){
+  var tot=dur()*60;
+  if(tL===Math.floor(tot/2)&&mode==='work') sN('⏱ Halfway There!','Keep going '+usr+'!');
+  if(tL<=1){
+    clearInterval(tI); run=false; tL=0; updD();
+    document.getElementById('SB').textContent='▶ Start Focus';
+    document.getElementById('OS').classList.add('hide');
+    document.getElementById('OC').textContent='0';
+    if(mode==='work'){
+      ses++; totM+=wM; str++;
+      updS(); chkB();
+      sN('🎉 Session Complete!',usr+', time for a break!');
+      document.getElementById('VM').classList.remove('hide');
     } else {
-      clearInterval(intervalRef.current);
+      sN('⏰ Break Over!','Back to focus mode 🚀');
+      sMode('work');
     }
-    return () => clearInterval(intervalRef.current);
-  }, [running, mode]);
-
-  // ── Styles ──
-  const S = {
-    app: {
-      minHeight:"100vh", background:"#0a0b10", fontFamily:"'DM Sans', sans-serif",
-      color:"#e8e9f0", maxWidth:420, margin:"0 auto", display:"flex", flexDirection:"column",
-      backgroundImage:`
-        radial-gradient(ellipse 60% 40% at 20% 0%, rgba(124,106,255,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 35% at 80% 100%, rgba(0,212,255,0.08) 0%, transparent 60%)
-      `,
-    },
-    header: {
-      display:"flex", alignItems:"center", justifyContent:"space-between",
-      padding:"14px 18px 10px", borderBottom:"1px solid rgba(255,255,255,0.07)",
-      background:"rgba(10,11,16,0.92)", backdropFilter:"blur(12px)",
-      position:"sticky", top:0, zIndex:10,
-    },
-    tabBar: {
-      display:"flex", overflowX:"auto", padding:"0 8px",
-      borderBottom:"1px solid rgba(255,255,255,0.07)",
-      background:"rgba(10,11,16,0.95)", backdropFilter:"blur(12px)",
-      position:"sticky", top:61, zIndex:9, scrollbarWidth:"none",
-    },
-    tab: (a) => ({
-      display:"flex", alignItems:"center", gap:4, padding:"10px 11px",
-      fontSize:11, fontWeight:600, whiteSpace:"nowrap", cursor:"pointer",
-      border:"none", background:"none",
-      color: a ? "#00d4ff" : "rgba(255,255,255,0.38)",
-      borderBottom: a ? "2px solid #00d4ff" : "2px solid transparent",
-      transition:"all 0.2s", flexShrink:0,
-    }),
-    content: { flex:1, padding:"16px 14px 100px", overflowY:"auto" },
-    card: {
-      background:"rgba(255,255,255,0.04)", borderRadius:16,
-      border:"1px solid rgba(255,255,255,0.08)", padding:"16px", marginBottom:12,
-    },
-    cardTitle: { fontSize:17, fontWeight:700, marginBottom:5, display:"flex", alignItems:"center", gap:8 },
-    cardSub: { fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.55 },
-    btn: (bg, col="#fff") => ({
-      width:"100%", padding:"13px", borderRadius:12, border:"none",
-      background:bg, color:col, fontSize:14, fontWeight:700, cursor:"pointer",
-      display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-    }),
-    input: {
-      width:"100%", padding:"11px 13px", borderRadius:10,
-      border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.05)",
-      color:"#e8e9f0", fontSize:13, outline:"none", boxSizing:"border-box",
-    },
-  };
-
-  const tabs = [
-    { id:"timer",    label:"Timer",    icon:<RocketIcon /> },
-    { id:"orbit",    label:"Orbit",    icon:<UsersIcon /> },
-    { id:"badges",   label:"Badges",   icon:<TrophyIcon /> },
-    { id:"alibi",    label:"Alibi",    icon:<MessageIcon /> },
-    { id:"pact",     label:"Pact",     icon:<LinkIcon /> },
-    { id:"vibe",     label:"Vibes",    icon:<SmileIcon /> },
-    { id:"settings", label:"Settings", icon:<GearIcon /> },
-  ];
-
-  return (
-    <div style={S.app}>
-      {/* Toasts */}
-      {toasts.slice(-1).map(t => (
-        <Toast key={t.id} msg={t.msg} onDone={() => setToasts(p => p.filter(x => x.id !== t.id))} />
-      ))}
-
-      {/* Header */}
-      <div style={S.header}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#7c6aff,#00d4ff)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🚀</div>
-          <div>
-            <div style={{ fontSize:16, fontWeight:700, letterSpacing:-0.3 }}>AuraFocus</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>@{username} · 🔥 {streak} day streak</div>
-          </div>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button title={notifEnabled ? "Disable notifications" : "Enable notifications"}
-            onClick={() => {
-              if (notifPermission !== "granted") requestNotifPermission();
-              else { setNotifEnabled(e => !e); addToast(notifEnabled ? "🔕 Notifications muted" : "🔔 Notifications on"); }
-            }} style={{
-            background: notifEnabled && notifPermission==="granted" ? "rgba(0,212,255,0.14)" : "rgba(255,255,255,0.06)",
-            border:`1px solid ${notifEnabled && notifPermission==="granted" ? "rgba(0,212,255,0.35)" : "rgba(255,255,255,0.1)"}`,
-            borderRadius:8, padding:"6px 8px", cursor:"pointer",
-            color: notifEnabled && notifPermission==="granted" ? "#00d4ff" : "rgba(255,255,255,0.3)",
-          }}>
-            <BellIcon off={!notifEnabled || notifPermission !== "granted"} />
-          </button>
-          <button style={{ background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer" }}>
-            <LogoutIcon />
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={S.tabBar}>
-        {tabs.map(t => (
-          <button key={t.id} style={S.tab(tab === t.id)} onClick={() => setTab(t.id)}>
-            {t.icon} {t.label}
-            {t.id === "badges" && newBadges.size > 0 && (
-              <span style={{ background:"#ffd166", color:"#0a0b10", borderRadius:"50%", width:14, height:14, fontSize:8, fontWeight:800, display:"inline-flex", alignItems:"center", justifyContent:"center", marginLeft:2 }}>
-                {newBadges.size}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div style={S.content}>
-
-        {/* ─── TIMER ─── */}
-        {tab === "timer" && (
-          <>
-            {notifPermission !== "granted" && (
-              <div style={{ ...S.card, background:"rgba(0,212,255,0.06)", border:"1px solid rgba(0,212,255,0.2)", display:"flex", alignItems:"center", gap:10, padding:"12px 14px" }}>
-                <BellIcon size={18} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:700 }}>Enable Notifications</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:1 }}>Get alerts when sessions end</div>
-                </div>
-                <button onClick={requestNotifPermission} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#00d4ff", color:"#0a0b10", fontSize:11, fontWeight:800, cursor:"pointer" }}>Enable</button>
-              </div>
-            )}
-
-            {/* Mode switcher */}
-            <div style={{ display:"flex", gap:6, marginBottom:18, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
-              {[["work","Focus"],["short","Short Break"],["long","Long Break"]].map(([m,l]) => (
-                <button key={m} onClick={() => switchMode(m)} style={{
-                  flex:1, padding:"8px 4px", borderRadius:9, border:"none", cursor:"pointer",
-                  fontSize:11, fontWeight:700,
-                  background: mode===m ? modeColor : "transparent",
-                  color: mode===m ? "#0a0b10" : "rgba(255,255,255,0.42)",
-                  transition:"all 0.2s",
-                }}>{l}</button>
-              ))}
-            </div>
-
-            {/* Ring */}
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
-              <CircularProgress progress={progress} color={modeColor}>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:50, fontWeight:800, letterSpacing:-2, color:"#fff", lineHeight:1, fontVariantNumeric:"tabular-nums" }}>{formatTime(timeLeft)}</div>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:5, fontWeight:600 }}>{modeLabel}</div>
-                  <div style={{ fontSize:11, color:modeColor, marginTop:3 }}>Session #{sessions+1}</div>
-                </div>
-              </CircularProgress>
-            </div>
-
-            {/* Controls */}
-            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-              <button onClick={handleStartStop} style={{ ...S.btn(`linear-gradient(135deg,${modeColor},${modeColor}99)`), flex:2 }}>
-                {running ? "⏸ Pause" : "▶ Start Focus"}
-              </button>
-              <button onClick={() => resetTimer(mode, settings)} style={{ flex:1, padding:"13px", borderRadius:12, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"rgba(255,255,255,0.55)", fontSize:14, fontWeight:700, cursor:"pointer" }}>↺</button>
-            </div>
-
-            {/* Stats row */}
-            <div style={{ ...S.card, display:"flex", justifyContent:"space-around", padding:"13px 0" }}>
-              {[["Sessions", sessions, "#7c6aff"],["Minutes", totalMins, "#00d4ff"],["🔥 Streak", `${streak}d`, "#ff6b35"]].map(([k,v,c]) => (
-                <div key={k} style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:22, fontWeight:800, color:c }}>{v}</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.38)", marginTop:2 }}>{k}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Earned badges strip */}
-            {earnedBadges.size > 0 && (
-              <div style={S.card}>
-                <div style={{ fontSize:12, fontWeight:700, marginBottom:9, color:"#ffd166" }}>🏅 Your Badges — <span style={{ color:"rgba(255,255,255,0.35)", fontWeight:500 }}>{earnedBadges.size}/{ALL_BADGES.length} unlocked</span></div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                  {ALL_BADGES.filter(b => earnedBadges.has(b.id)).map(b => (
-                    <div key={b.id} title={b.name} style={{
-                      width:38, height:38, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:20, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)",
-                      boxShadow: newBadges.has(b.id) ? "0 0 14px rgba(255,209,102,0.5)" : "none",
-                    }}>{b.icon}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Vibe prompt */}
-            {showVibePrompt && (
-              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.78)", zIndex:50, display:"flex", alignItems:"flex-end" }}>
-                <div style={{ background:"#13141c", borderRadius:"20px 20px 0 0", padding:22, width:"100%", border:"1px solid rgba(255,255,255,0.1)", borderBottom:"none" }}>
-                  <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>🎉 Session Complete!</div>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", marginBottom:14 }}>How was your focus session?</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
-                    {MOODS.map(m => (
-                      <button key={m.label} onClick={() => setSelectedMood(m.label)} style={{
-                        padding:"9px", borderRadius:10,
-                        border:`1px solid ${selectedMood===m.label ? m.color : "rgba(255,255,255,0.1)"}`,
-                        background: selectedMood===m.label ? `${m.color}22` : "rgba(255,255,255,0.04)",
-                        color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", textAlign:"left",
-                      }}>{m.label}</button>
-                    ))}
-                  </div>
-                  <button onClick={() => {
-                    if (selectedMood) {
-                      setVibes(v => [{ mood:selectedMood, time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}), user:username }, ...v]);
-                      setSelectedMood(null);
-                    }
-                    setShowVibePrompt(false);
-                  }} style={S.btn("linear-gradient(135deg,#7c6aff,#00d4ff)")}>
-                    {selectedMood ? "Share Vibe ✨" : "Skip"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ─── ORBIT ─── */}
-        {tab === "orbit" && (
-          <>
-            <div style={S.card}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={S.cardTitle}>⚡ Focus Orbit</div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:28, fontWeight:800, color:"#00d4ff", lineHeight:1 }}>{running ? focusers.length+1 : 0}</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>Active Now</div>
-                </div>
-              </div>
-              <p style={S.cardSub}>Each glowing star is someone focusing right now ⭐</p>
-            </div>
-            <div style={{ ...S.card, height:290, position:"relative", overflow:"hidden", background:"radial-gradient(circle at 50% 50%, rgba(124,106,255,0.08) 0%, transparent 70%)" }}>
-              {Array.from({length:30}).map((_,i) => (
-                <div key={i} style={{ position:"absolute", left:`${(i%6)*18+5}%`, top:`${Math.floor(i/6)*20+5}%`, width:2, height:2, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }} />
-              ))}
-              <FocusStar x={50} y={50} name="You" isYou />
-              {running && focusers.map((f,i) => <FocusStar key={i} {...f} isYou={false} />)}
-              {!running && (
-                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:60 }}>Start a session to activate your orbit!</div>
-                </div>
-              )}
-            </div>
-            <div style={S.card}>
-              <div style={{ fontSize:12, fontWeight:700, marginBottom:9, color:"rgba(255,255,255,0.55)" }}>🎵 Focus Music</div>
-              <div style={{ display:"flex", gap:8, overflowX:"auto", scrollbarWidth:"none" }}>
-                {[["🔥 High Energy","#ff6b35"],["💜 Lo-Fi","#7c6aff"],["🌊 Deep Work","#00d4ff"],["🌿 Nature","#06ffa5"]].map(([l,c]) => (
-                  <div key={l} style={{ padding:"7px 12px", borderRadius:20, flexShrink:0, fontSize:11, fontWeight:600, background:`${c}22`, border:`1px solid ${c}66`, color:"#fff", cursor:"pointer" }}>{l}</div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ─── BADGES ─── */}
-        {tab === "badges" && (
-          <>
-            {/* Summary card */}
-            <div style={{ ...S.card, background:"linear-gradient(135deg, rgba(124,106,255,0.14), rgba(0,212,255,0.07))", border:"1px solid rgba(124,106,255,0.28)" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-                <div>
-                  <div style={{ fontSize:34, fontWeight:800, color:"#ffd166", lineHeight:1 }}>
-                    {earnedBadges.size}
-                    <span style={{ fontSize:15, color:"rgba(255,255,255,0.35)", fontWeight:500 }}>/{ALL_BADGES.length}</span>
-                  </div>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", marginTop:3 }}>Badges Unlocked</div>
-                </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:28, fontWeight:800, color:"#ff6b35", lineHeight:1 }}>🔥 {streak}</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:3 }}>Day Streak</div>
-                </div>
-              </div>
-              <div style={{ height:6, borderRadius:3, background:"rgba(255,255,255,0.08)" }}>
-                <div style={{ height:"100%", borderRadius:3, background:"linear-gradient(90deg,#7c6aff,#ffd166)", width:`${(earnedBadges.size/ALL_BADGES.length)*100}%`, transition:"width 0.6s" }} />
-              </div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:5 }}>{ALL_BADGES.length - earnedBadges.size} badges still to unlock</div>
-            </div>
-
-            {/* Test button */}
-            <button onClick={() => {
-              setSessions(prev => {
-                const newS = prev + 1;
-                setTotalMins(m => {
-                  const newM = m + 25;
-                  checkBadges(newS, streak, newM);
-                  return newM;
-                });
-                return newS;
-              });
-              addToast("✅ Simulated a session!");
-            }} style={{ ...S.btn("rgba(255,255,255,0.05)"), border:"1px dashed rgba(255,255,255,0.14)", color:"rgba(255,255,255,0.4)", marginBottom:12, fontSize:12 }}>
-              ＋ Simulate Session (testing)
-            </button>
-
-            {/* All badges */}
-            <div style={S.card}>
-              <div style={{ fontSize:13, fontWeight:700, marginBottom:12, color:"#ffd166" }}>🏅 All Badges</div>
-              {ALL_BADGES.map(b => (
-                <BadgeCard key={b.id} badge={b} earned={earnedBadges.has(b.id)} newlyEarned={newBadges.has(b.id)} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ─── ALIBI ─── */}
-        {tab === "alibi" && (
-          <>
-            <div style={S.card}>
-              <div style={S.cardTitle}>💬 Alibi Messages</div>
-              <p style={S.cardSub}>Auto-reply messages for when you're in deep focus mode.</p>
-            </div>
-            <div style={S.card}>
-              <div style={{ fontSize:13, fontWeight:700, marginBottom:9 }}>Add Message</div>
-              <div style={{ display:"flex", gap:8 }}>
-                <input style={{ ...S.input, flex:1 }} placeholder="e.g., In focus mode, brb! ⚡"
-                  value={alibiInput} onChange={e => setAlibiInput(e.target.value)}
-                  onKeyDown={e => { if(e.key==="Enter"&&alibiInput.trim()){ setAlibis(a=>[alibiInput.trim(),...a]); setAlibiInput(""); }}} />
-                <button onClick={() => { if(alibiInput.trim()){ setAlibis(a=>[alibiInput.trim(),...a]); setAlibiInput(""); }}}
-                  style={{ padding:"0 14px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", cursor:"pointer", fontWeight:700 }}>
-                  <PlusIcon />
-                </button>
-              </div>
-            </div>
-            <div style={S.card}>
-              <div style={{ fontSize:13, fontWeight:700, marginBottom:9 }}>Your Messages</div>
-              {alibis.length === 0
-                ? <div style={{ textAlign:"center", padding:"20px 0", color:"rgba(255,255,255,0.3)", fontSize:12 }}>No messages yet. Add some above!</div>
-                : alibis.map((a,i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", borderRadius:10, marginBottom:8, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                    <div style={{ fontSize:12, flex:1, marginRight:8, color:"rgba(255,255,255,0.75)" }}>{a}</div>
-                    <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={() => { navigator.clipboard?.writeText(a); setCopiedIdx(i); setTimeout(()=>setCopiedIdx(null),1500); }}
-                        style={{ background:"rgba(0,212,255,0.1)", border:"none", color:"#00d4ff", borderRadius:7, padding:"5px 8px", cursor:"pointer" }}>
-                        {copiedIdx===i ? "✓" : <CopyIcon />}
-                      </button>
-                      <button onClick={() => setAlibis(al => al.filter((_,j)=>j!==i))}
-                        style={{ background:"rgba(255,80,80,0.1)", border:"none", color:"#ff5050", borderRadius:7, padding:"5px 8px", cursor:"pointer" }}>
-                        <TrashIcon />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-            <button style={S.btn("linear-gradient(135deg,#b06aff,#ff6eb4)")}>💾 Save Messages</button>
-          </>
-        )}
-
-        {/* ─── PACT ─── */}
-        {tab === "pact" && (
-          <>
-            <div style={S.card}>
-              <div style={S.cardTitle}>🤝 Accountability Pact</div>
-              <p style={S.cardSub}>Link a friend who gets notified if you break your session early.</p>
-            </div>
-            {linkedFriend ? (
-              <div style={{ ...S.card, border:"1px solid rgba(6,255,165,0.28)", background:"rgba(6,255,165,0.05)" }}>
-                <div style={{ fontSize:13, color:"#06ffa5", fontWeight:700, marginBottom:5 }}>✅ Pact Active</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)" }}>Linked with <strong>@{linkedFriend}</strong></div>
-                <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)", marginTop:3 }}>They'll be notified if you quit early.</div>
-                <button onClick={() => setLinkedFriend(null)} style={{ marginTop:12, padding:"7px 14px", borderRadius:8, border:"1px solid rgba(255,80,80,0.3)", background:"rgba(255,80,80,0.08)", color:"#ff5050", fontSize:12, fontWeight:600, cursor:"pointer" }}>Remove Pact</button>
-              </div>
-            ) : (
-              <div style={S.card}>
-                <div style={{ fontSize:13, fontWeight:700, marginBottom:9 }}>Link a Friend</div>
-                <input style={{ ...S.input, marginBottom:10 }} placeholder="Enter friend's username"
-                  value={pactFriend} onChange={e => setPactFriend(e.target.value)} />
-                <button onClick={() => { if(pactFriend.trim()){ setLinkedFriend(pactFriend.trim()); setPactFriend(""); }}}
-                  style={S.btn("linear-gradient(135deg,#ff9b54,#ff6b35)")}>
-                  🔗 Link Pact
-                </button>
-              </div>
-            )}
-            <div style={{ ...S.card, border:"1px solid rgba(255,209,102,0.18)" }}>
-              <div style={{ fontSize:12, fontWeight:700, color:"#ffd166", marginBottom:5 }}>⚠️ How it works</div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)", lineHeight:1.6 }}>When you break a focus session early, your accountability friend gets a notification. This keeps you committed to your goals!</div>
-            </div>
-          </>
-        )}
-
-        {/* ─── VIBE ─── */}
-        {tab === "vibe" && (
-          <>
-            <div style={S.card}>
-              <div style={S.cardTitle}>😊 Vibe-Check Feed</div>
-              <p style={S.cardSub}>Post-session moods from the AuraFocus community.</p>
-            </div>
-            {vibes.length === 0
-              ? <div style={{ ...S.card, textAlign:"center", padding:"36px 20px" }}>
-                  <div style={{ fontSize:36, marginBottom:10 }}>✨</div>
-                  <div style={{ fontSize:14, fontWeight:700, marginBottom:5 }}>No vibes yet</div>
-                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)" }}>Complete a session and share your mood!</div>
-                </div>
-              : vibes.map((v,i) => {
-                  const mood = MOODS.find(m => m.label===v.mood) || MOODS[0];
-                  return (
-                    <div key={i} style={{ ...S.card, borderLeft:`3px solid ${mood.color}` }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div style={{ fontSize:14, fontWeight:700 }}>{v.mood}</div>
-                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.32)" }}>{v.time}</div>
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)", marginTop:3 }}>@{v.user}</div>
-                    </div>
-                  );
-                })
-            }
-          </>
-        )}
-
-        {/* ─── SETTINGS ─── */}
-        {tab === "settings" && (
-          <>
-            <div style={S.card}>
-              <div style={S.cardTitle}>⚙️ Settings</div>
-              <p style={S.cardSub}>Customize your timer and notifications.</p>
-            </div>
-
-            {/* Notifications */}
-            <div style={S.card}>
-              <div style={{ fontSize:13, fontWeight:700, marginBottom:12, color:"#00d4ff" }}>🔔 Notifications</div>
-              {["Session complete alert","Halfway reminder","Break over alert"].map(label => (
-                <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:11 }}>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)" }}>{label}</div>
-                  <div onClick={() => {
-                    if (notifPermission !== "granted") requestNotifPermission();
-                    else setNotifEnabled(e => !e);
-                  }} style={{
-                    width:40, height:22, borderRadius:11, cursor:"pointer",
-                    background: notifEnabled && notifPermission==="granted" ? "#7c6aff" : "rgba(255,255,255,0.1)",
-                    position:"relative", transition:"background 0.2s", flexShrink:0,
-                  }}>
-                    <div style={{
-                      position:"absolute", top:2,
-                      left: notifEnabled && notifPermission==="granted" ? 19 : 2,
-                      width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left 0.2s",
-                    }} />
-                  </div>
-                </div>
-              ))}
-              {notifPermission !== "granted" && (
-                <button onClick={requestNotifPermission} style={{ ...S.btn("rgba(0,212,255,0.1)"), color:"#00d4ff", border:"1px solid rgba(0,212,255,0.25)", marginTop:6, fontSize:12 }}>
-                  <BellIcon /> Enable Browser Notifications
-                </button>
-              )}
-            </div>
-
-            {/* Timer durations */}
-            <div style={S.card}>
-              <div style={{ fontSize:13, fontWeight:700, marginBottom:13, color:"#7c6aff" }}>🕐 Timer Durations</div>
-              {[["work","Work Duration","#7c6aff",5,120],["short","Short Break","#06ffa5",1,30],["long","Long Break","#00d4ff",5,60]].map(([k,l,c,min,max]) => (
-                <div key={k} style={{ marginBottom:16 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                    <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{l}</span>
-                    <span style={{ fontSize:19, fontWeight:800, color:c }}>{editSettings[k]}<span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontWeight:500 }}> min</span></span>
-                  </div>
-                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                    <input type="number" min={min} max={max} value={editSettings[k]}
-                      onChange={e => setEditSettings(s => ({...s,[k]:Number(e.target.value)}))}
-                      style={{ ...S.input, width:62, textAlign:"center", padding:"8px" }} />
-                    <input type="range" min={min} max={max} value={editSettings[k]}
-                      onChange={e => setEditSettings(s => ({...s,[k]:Number(e.target.value)}))}
-                      style={{ flex:1, accentColor:c }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={() => { setSettings(editSettings); resetTimer(mode, editSettings); addToast("✅ Settings saved!"); }}
-              style={S.btn("linear-gradient(135deg,#00d4ff,#7c6aff)")}>
-              💾 Save Settings
-            </button>
-          </>
-        )}
-
-      </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap');
-        * { box-sizing:border-box; margin:0; padding:0; }
-        input[type=range] { height:4px; border-radius:2px; }
-        ::-webkit-scrollbar { display:none; }
-        input::placeholder { color:rgba(255,255,255,0.2); }
-        @keyframes slideUp {
-          from { opacity:0; transform:translateX(-50%) translateY(16px); }
-          to   { opacity:1; transform:translateX(-50%) translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
+    return;
+  }
+  tL--; updD();
 }
 
+function rst(){
+  run=false; clearInterval(tI);
+  document.getElementById('SB').textContent='▶ Start Focus';
+  document.getElementById('OS').classList.add('hide');
+  document.getElementById('OC').textContent='0';
+  tL=dur()*60; updD();
+}
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<AuraFocus />);
-  
+function updS(){
+  document.getElementById('SS').textContent=ses;
+  document.getElementById('SM').textContent=totM;
+  document.getElementById('SK').textContent=str+'d';
+  document.getElementById('HS').textContent='@'+usr+' · 🔥 '+str+' day streak';
+  document.getElementById('BKS').textContent=str;
+}
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<AuraFocus />);
-  </script>
+function svS(){ tL=dur()*60; updD(); toast('✅ Settings saved!'); }
+
+// Badges
+function chkB(){
+  var h=new Date().getHours(), nl=[];
+  BDG.forEach(function(b){
+    if(!ern.has(b.id)&&b.c(ses,str,h,totM)){ ern.add(b.id); frsh.add(b.id); nl.push(b); }
+  });
+  if(nl.length){
+    nl.forEach(function(b){ sN(b.i+' Badge Unlocked!','You earned "'+b.n+'"'); });
+    var t=document.getElementById('BT');
+    if(!t.querySelector('.dot')){
+      var d=document.createElement('span'); d.className='dot';
+      d.style.cssText='background:#ffd166;color:#0a0b10;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:2px';
+      d.textContent=frsh.size; t.appendChild(d);
+    }
+    setTimeout(function(){ frsh.clear(); rBdg(); var d=document.getElementById('BT').querySelector('.dot'); if(d)d.remove(); },8000);
+  }
+  rBdg(); rBstrip();
+}
+
+function sim(){ ses++; totM+=25; str++; updS(); chkB(); toast('✅ Simulated!'); }
+
+function rBdg(){
+  var cnt=ern.size;
+  document.getElementById('BCN').textContent=cnt;
+  document.getElementById('BP').style.width=(cnt/BDG.length*100)+'%';
+  document.getElementById('BR').textContent=(BDG.length-cnt)+' to unlock';
+  var h='';
+  BDG.forEach(function(b){
+    var e=ern.has(b.id),f=frsh.has(b.id);
+    h+='<div class="bc'+(e?' e':'')+(f?' f':'')+'"><div class="bi'+(e?' e':'')+'">'+b.i+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+(e?'#fff':'rgba(255,255,255,.28)')+'">'+b.n+(f?'<span style="font-size:9px;background:#ffd166;color:#0a0b10;padding:2px 6px;border-radius:20px;font-weight:800;margin-left:7px">NEW!</span>':'')+'</div><div style="font-size:11px;color:'+(e?'rgba(255,255,255,.4)':'rgba(255,255,255,.18)')+'">'+b.d+'</div></div>'+(e?'<div style="font-size:16px;color:var(--g)">✓</div>':'')+'</div>';
+  });
+  document.getElementById('BL2').innerHTML=h;
+}
+
+function rBstrip(){
+  if(ern.size>0){
+    document.getElementById('BST').classList.remove('hide');
+    document.getElementById('BSI').innerHTML=BDG.filter(function(b){return ern.has(b.id);}).map(function(b){
+      return '<div title="'+b.n+'" style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)">'+b.i+'</div>';
+    }).join('');
+  }
+}
+
+// Alibi
+function aA(){ var inp=document.getElementById('AI'); if(inp.value.trim()){ alib.unshift(inp.value.trim()); inp.value=''; rAlib(); } }
+function rAlib(){
+  if(!alib.length){ document.getElementById('ALI').innerHTML='<div style="text-align:center;padding:16px 0;color:rgba(255,255,255,.3);font-size:12px">No messages yet!</div>'; return; }
+  document.getElementById('ALI').innerHTML=alib.map(function(a,i){
+    return '<div class="ar"><div style="font-size:12px;flex:1;margin-right:8px;color:rgba(255,255,255,.75)">'+a+'</div><div style="display:flex;gap:6px"><button onclick="cpA('+i+',this)" style="background:rgba(0,212,255,.1);border:none;color:var(--c);border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px">📋</button><button onclick="dlA('+i+')" style="background:rgba(255,80,80,.1);border:none;color:#ff5050;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px">🗑️</button></div></div>';
+  }).join('');
+}
+function cpA(i,b){ navigator.clipboard&&navigator.clipboard.writeText(alib[i]).catch(function(){}); b.textContent='✓'; setTimeout(function(){b.textContent='📋';},1500); }
+function dlA(i){ alib.splice(i,1); rAlib(); }
+
+// Pact
+function lP(){ var v=document.getElementById('PI').value.trim(); if(!v)return; document.getElementById('PN').textContent='@'+v; document.getElementById('PF').classList.add('hide'); document.getElementById('PAC').classList.remove('hide'); document.getElementById('PI').value=''; }
+function rP(){ document.getElementById('PF').classList.remove('hide'); document.getElementById('PAC').classList.add('hide'); }
+
+// Vibe
+function pM(btn,m){ document.querySelectorAll('.vb').forEach(function(b){b.classList.remove('s');}); btn.classList.add('s'); moo=m; document.getElementById('VS').textContent='Share Vibe ✨'; }
+function subV(){
+  if(moo){
+    var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    vib.unshift({m:moo,t:t});
+    document.getElementById('VE').style.display='none';
+    document.getElementById('VF').innerHTML=vib.map(function(v){ var c=MC[v.m]||'#7c6aff'; return '<div class="card" style="border-left:3px solid '+c+'"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:700">'+v.m+'</div><div style="font-size:11px;color:rgba(255,255,255,.32)">'+v.t+'</div></div><div style="font-size:12px;color:rgba(255,255,255,.38);margin-top:3px">@'+usr+'</div></div>'; }).join('');
+    moo=null;
+  }
+  document.getElementById('VM').classList.add('hide');
+  document.getElementById('VS').textContent='Skip';
+  document.querySelectorAll('.vb').forEach(function(b){b.classList.remove('s');});
+}
+
+// Notifications
+function tBell(){ if(!nOn) rNotif(); else { nOn=!nOn; toast(nOn?'🔔 On':'🔕 Muted'); } }
+async function rNotif(){
+  if(!('Notification' in window)){ toast('❌ Not supported'); return; }
+  var p=await Notification.requestPermission();
+  if(p==='granted'){ nOn=true; document.getElementById('NB').classList.add('hide'); document.getElementById('BL').classList.add('on'); document.getElementById('NSB').textContent='✅ Enabled'; toast('🔔 Notifications enabled!'); }
+  else toast('❌ Notifications denied');
+}
+function sN(title,body){ toast(title); if(nOn&&'Notification' in window&&Notification.permission==='granted'){ try{new Notification(title,{body:body});}catch(e){} } }
+
+var _tt=null;
+function toast(msg){ var el=document.querySelector('.toast'); if(el)el.remove(); el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); clearTimeout(_tt); _tt=setTimeout(function(){if(el.parentNode)el.remove();},3000); }
+</script>
 </body>
 </html>
