@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AuraFocus"/>
+<meta name="theme-color" content="#0a0b10"/>
+<title>AuraFocus</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--purple:#7c6aff;--cyan:#00d4ff;--green:#06ffa5;--orange:#ff9b54;--pink:#ff6eb4;--bg:#0a0b10;--border:rgba(255,255,255,0.08)}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:#e8e9f0;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--bg);background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(124,106,255,.12) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 80% 100%,rgba(0,212,255,.08) 0%,transparent 60%)}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);background:rgba(10,11,16,.95)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-title{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+.bell-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 9px;cursor:pointer;font-size:16px}
+.bell-btn.on{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35)}
+.tabs{display:flex;overflow-x:auto;background:rgba(10,11,16,.95);border-bottom:1px solid var(--border);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:4px;padding:10px 11px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;border:none;background:none;color:rgba(255,255,255,.38);border-bottom:2px solid transparent;transition:all .2s;flex-shrink:0;font-family:inherit}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.content{flex:1;overflow-y:auto;padding:16px 14px 80px;-webkit-overflow-scrolling:touch}
+.content::-webkit-scrollbar{display:none}
+.card{background:rgba(255,255,255,.04);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:12px}
+.card-title{font-size:17px;font-weight:700;margin-bottom:5px}
+.card-sub{font-size:12px;color:rgba(255,255,255,.45);line-height:1.55}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
+.btn:active{opacity:.85}
+.btn-primary{background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff}
+.btn-ghost{background:rgba(255,255,255,.05);border:1px solid var(--border);color:rgba(255,255,255,.55)}
+.inp{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:#e8e9f0;font-size:13px;outline:none;font-family:inherit}
+.inp::placeholder{color:rgba(255,255,255,.2)}
+.hidden{display:none!important}
+/* Timer */
+.timer-modes{display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.04);border-radius:12px;padding:4px}
+.mode-btn{flex:1;padding:8px 4px;border-radius:9px;border:none;cursor:pointer;font-size:11px;font-weight:700;background:transparent;color:rgba(255,255,255,.42);transition:all .2s;font-family:inherit}
+.ring-wrap{display:flex;justify-content:center;margin-bottom:20px;position:relative}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.big-time{font-size:50px;font-weight:800;letter-spacing:-2px;color:#fff;line-height:1;font-variant-numeric:tabular-nums}
+.ctrl-row{display:flex;gap:10px;margin-bottom:14px}
+.stats-row{display:flex;justify-content:space-around;padding:12px 0}
+.stat-val{font-size:22px;font-weight:800;text-align:center}
+.stat-lbl{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px;text-align:center}
+/* Badges */
+.badge-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);margin-bottom:8px}
+.badge-card.earned{border-color:rgba(124,106,255,.3);background:rgba(124,106,255,.07)}
+.badge-card.fresh{border-color:#ffd166;background:rgba(255,209,102,.08);box-shadow:0 0 20px rgba(255,209,102,.2)}
+.badge-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;filter:grayscale(1) opacity(.2)}
+.badge-ico.earned{filter:none;background:rgba(255,255,255,.08)}
+/* Orbit */
+.orbit-box{height:280px;position:relative;overflow:hidden;border-radius:14px;background:radial-gradient(circle at 50% 50%,rgba(124,106,255,.08) 0%,transparent 70%);margin-bottom:12px}
+.star{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)}
+.star-ball{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid}
+.star-lbl{font-size:10px;color:rgba(255,255,255,.7);margin-top:4px;white-space:nowrap}
+/* Alibi */
+.alibi-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+/* Toggle */
+.tgl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.tgl{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tgl.on{background:var(--purple)}
+.tgl-k{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.tgl.on .tgl-k{left:20px}
+/* Vibe modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:50;display:flex;align-items:flex-end}
+.modal{background:#13141c;border-radius:20px 20px 0 0;padding:22px;width:100%;border:1px solid var(--border);border-bottom:none}
+.vibe-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.vibe-btn{padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit}
+.vibe-btn.sel{border-color:var(--purple);background:rgba(124,106,255,.2)}
+/* Notif banner */
+.notif-bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);margin-bottom:12px}
+/* Toast */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1c1d2e,#14152a);border:1px solid rgba(124,106,255,.4);color:#fff;padding:11px 18px;border-radius:12px;font-size:12px;font-weight:600;z-index:999;box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;max-width:90vw;animation:su .3s ease;pointer-events:none}
+@keyframes su{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* Prog bar */
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin:10px 0 4px}
+.prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--purple),#ffd166);transition:width .5s}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🚀</div>
+      <div>
+        <div class="logo-title">AuraFocus</div>
+        <div class="logo-sub" id="hdr-sub">@GoTuber · 🔥 2 day streak</div>
+      </div>
+    </div>
+    <button class="bell-btn" id="bell" onclick="toggleBell()">🔔</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="go('timer',this)">🚀 Timer</button>
+    <button class="tab" onclick="go('orbit',this)">👥 Orbit</button>
+    <button class="tab" onclick="go('badges',this)" id="btab">🏅 Badges</button>
+    <button class="tab" onclick="go('alibi',this)">💬 Alibi</button>
+    <button class="tab" onclick="go('pact',this)">🤝 Pact</button>
+    <button class="tab" onclick="go('vibe',this)">😊 Vibes</button>
+    <button class="tab" onclick="go('settings',this)">⚙️ Settings</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TIMER -->
+    <div id="t-timer">
+      <div class="notif-bar" id="nbar">
+        <span style="font-size:20px">🔔</span>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700">Enable Notifications</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Get alerts when sessions end</div></div>
+        <button onclick="reqNotif()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--cyan);color:#0a0b10;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit">Enable</button>
+      </div>
+
+      <div class="timer-modes">
+        <button class="mode-btn" id="mb-work" onclick="setMode('work')" style="background:var(--purple);color:#0a0b10">Focus</button>
+        <button class="mode-btn" id="mb-short" onclick="setMode('short')">Short Break</button>
+        <button class="mode-btn" id="mb-long" onclick="setMode('long')">Long Break</button>
+      </div>
+
+      <div class="ring-wrap">
+        <svg width="260" height="260">
+          <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+          <circle id="arc" cx="130" cy="130" r="120" fill="none" stroke="var(--purple)" stroke-width="10"
+            stroke-dasharray="753.98" stroke-dashoffset="753.98" stroke-linecap="round" style="transition:stroke-dashoffset .5s"/>
+        </svg>
+        <div class="ring-time">
+          <div class="big-time" id="tdisp">25:00</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:5px;font-weight:600" id="mlbl">Focus</div>
+          <div style="font-size:11px;margin-top:3px;color:var(--purple)" id="snum">Session #1</div>
+        </div>
+      </div>
+
+      <div class="ctrl-row">
+        <button class="btn btn-primary" id="sbtn" onclick="toggleRun()" style="flex:2">▶ Start Focus</button>
+        <button class="btn btn-ghost" onclick="doReset()" style="flex:1">↺</button>
+      </div>
+
+      <div class="card">
+        <div class="stats-row">
+          <div><div class="stat-val" id="ss" style="color:var(--purple)">0</div><div class="stat-lbl">Sessions</div></div>
+          <div><div class="stat-val" id="sm" style="color:var(--cyan)">0</div><div class="stat-lbl">Minutes</div></div>
+          <div><div class="stat-val" id="sk" style="color:#ff6b35">2d</div><div class="stat-lbl">🔥 Streak</div></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="bstrip">
+        <div style="font-size:12px;font-weight:700;margin-bottom:9px;color:#ffd166">🏅 Badges Earned</div>
+        <div id="bstrip-icons" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+      </div>
+    </div>
+
+    <!-- ORBIT -->
+    <div id="t-orbit" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="card-title">⚡ Focus Orbit</div>
+          <div style="text-align:right"><div id="ocount" style="font-size:28px;font-weight:800;color:var(--cyan);line-height:1">0</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Active Now</div></div>
+        </div>
+        <p class="card-sub">Each glowing star is someone focusing right now ⭐</p>
+      </div>
+      <div class="orbit-box" id="obox">
+        <div class="star" style="left:50%;top:50%">
+          <div class="star-ball" style="width:52px;height:52px;background:radial-gradient(circle,rgba(124,106,255,.8),rgba(124,106,255,.27));box-shadow:0 0 20px 8px rgba(124,106,255,.4);border-color:rgba(124,106,255,.6)">⭐</div>
+          <div class="star-lbl">You</div>
+        </div>
+        <div id="ostars" class="hidden">
+          <div class="star" style="left:20%;top:25%"><div class="star-ball" style="width:38px;height:38px;background:radial-gradient(circle,rgba(0,212,255,.8),rgba(0,212,255,.27));box-shadow:0 0 14px 5px rgba(0,212,255,.4);border-color:rgba(0,212,255,.6)">✨</div><div class="star-lbl">Alex</div></div>
+          <div class="star" style="left:72%;top:18%"><div class="star-ball" style="width:38px;height:38px;background:radial-gradient(circle,rgba(255,110,180,.8),rgba(255,110,180,.27));box-shadow:0 0 14px 5px rgba(255,110,180,.4);border-color:rgba(255,110,180,.6)">✨</div><div class="star-lbl">Sam</div></div>
+          <div class="star" style="left:58%;top:68%"><div class="star-ball" style="width:38px;height:38px;background:radial-gradient(circle,rgba(6,255,165,.8),rgba(6,255,165,.27));box-shadow:0 0 14px 5px rgba(6,255,165,.4);border-color:rgba(6,255,165,.6)">✨</div><div class="star-lbl">Jordan</div></div>
+          <div class="star" style="left:28%;top:70%"><div class="star-ball" style="width:38px;height:38px;background:radial-gradient(circle,rgba(255,209,102,.8),rgba(255,209,102,.27));box-shadow:0 0 14px 5px rgba(255,209,102,.4);border-color:rgba(255,209,102,.6)">✨</div><div class="star-lbl">Riley</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;margin-bottom:9px;color:rgba(255,255,255,.55)">🎵 Focus Music</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none">
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(255,107,53,.2);border:1px solid rgba(255,107,53,.5);color:#fff;cursor:pointer">🔥 High Energy</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(124,106,255,.2);border:1px solid rgba(124,106,255,.5);color:#fff;cursor:pointer">💜 Lo-Fi</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(0,212,255,.2);border:1px solid rgba(0,212,255,.5);color:#fff;cursor:pointer">🌊 Deep Work</span>
+          <span style="padding:7px 12px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:600;background:rgba(6,255,165,.2);border:1px solid rgba(6,255,165,.5);color:#fff;cursor:pointer">🌿 Nature</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BADGES -->
+    <div id="t-badges" class="hidden">
+      <div class="card" style="background:linear-gradient(135deg,rgba(124,106,255,.14),rgba(0,212,255,.07));border-color:rgba(124,106,255,.28)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+          <div><div style="font-size:34px;font-weight:800;color:#ffd166;line-height:1"><span id="bcnt">0</span><span style="font-size:15px;color:rgba(255,255,255,.35);font-weight:500">/11</span></div><div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:3px">Badges Unlocked</div></div>
+          <div style="text-align:right"><div style="font-size:26px;font-weight:800;color:#ff6b35;line-height:1">🔥 <span id="bstr">2</span></div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Day Streak</div></div>
+        </div>
+        <div class="prog"><div class="prog-fill" id="bprog" style="width:0%"></div></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.3)" id="brem">11 to unlock</div>
+      </div>
+      <button class="btn btn-ghost" onclick="simSession()" style="margin-bottom:12px;font-size:12px;border-style:dashed">＋ Simulate Session (testing)</button>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#ffd166">🏅 All Badges</div>
+        <div id="blist"></div>
+      </div>
+    </div>
+
+    <!-- ALIBI -->
+    <div id="t-alibi" class="hidden">
+      <div class="card"><div class="card-title">💬 Alibi Messages</div><p class="card-sub">Auto-reply messages for when you're in deep focus mode.</p></div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:9px">Add Message</div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="ainp" placeholder="e.g., In focus mode, brb! ⚡" style="flex:1" onkeydown="if(event.key==='Enter')addA()"/>
+          <button onclick="addA()" style="padding:0 14px;border-radius:10px;border:none;background:var(--purple);color:#fff;cursor:pointer;font-size:20px;font-family:inherit">+</button>
+        </div>
+      </div>
+      <div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:9px">Your Messages</div><div id="alist"></div></div>
+      <button class="btn" style="background:linear-gradient(135deg,#b06aff,var(--pink));color:#fff">💾 Save Messages</button>
+    </div>
+
+    <!-- PACT -->
+    <div id="t-pact" class="hidden">
+      <div class="card"><div class="card-title">🤝 Accountability Pact</div><p class="card-sub">Link a friend who gets notified if you break your session early.</p></div>
+      <div class="card" id="pform">
+        <div style="font-size:13px;font-weight:700;margin-bottom:9px">Link a Friend</div>
+        <input class="inp" id="pinp" placeholder="Enter friend's username" style="margin-bottom:10px"/>
+        <button class="btn" onclick="linkP()" style="background:linear-gradient(135deg,var(--orange),#ff6b35);color:#fff">🔗 Link Pact</button>
+      </div>
+      <div class="card hidden" id="pactive" style="border:1px solid rgba(6,255,165,.28);background:rgba(6,255,165,.05)">
+        <div style="font-size:13px;color:var(--green);font-weight:700;margin-bottom:5px">✅ Pact Active</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7)">Linked with <strong id="pname"></strong></div>
+        <div style="font-size:12px;color:rgba(255,255,255,.38);margin-top:3px">They'll be notified if you quit early.</div>
+        <button onclick="rmP()" style="margin-top:12px;padding:7px 14px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:rgba(255,80,80,.08);color:#ff5050;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Remove Pact</button>
+      </div>
+      <div class="card" style="border:1px solid rgba(255,209,102,.18)"><div style="font-size:12px;font-weight:700;color:#ffd166;margin-bottom:5px">⚠️ How it works</div><div style="font-size:12px;color:rgba(255,255,255,.38);line-height:1.6">When you break a focus session early, your accountability friend gets a notification. Stay committed!</div></div>
+    </div>
+
+    <!-- VIBE -->
+    <div id="t-vibe" class="hidden">
+      <div class="card"><div class="card-title">😊 Vibe-Check Feed</div><p class="card-sub">Post-session moods from the AuraFocus community.</p></div>
+      <div class="card" id="vemp" style="text-align:center;padding:36px 20px"><div style="font-size:36px;margin-bottom:10px">✨</div><div style="font-size:14px;font-weight:700;margin-bottom:5px">No vibes yet</div><div style="font-size:12px;color:rgba(255,255,255,.38)">Complete a session and share your mood!</div></div>
+      <div id="vfeed"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="t-settings" class="hidden">
+      <div class="card"><div class="card-title">⚙️ Settings</div><p class="card-sub">Customize your timer and notifications.</p></div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--cyan)">🔔 Notifications</div>
+        <div class="tgl-row"><div style="font-size:13px;color:rgba(255,255,255,.65)">Session complete</div><div class="tgl on" onclick="this.classList.toggle('on')"><div class="tgl-k"></div></div></div>
+        <div class="tgl-row"><div style="font-size:13px;color:rgba(255,255,255,.65)">Halfway reminder</div><div class="tgl on" onclick="this.classList.toggle('on')"><div class="tgl-k"></div></div></div>
+        <div class="tgl-row"><div style="font-size:13px;color:rgba(255,255,255,.65)">Break over alert</div><div class="tgl on" onclick="this.classList.toggle('on')"><div class="tgl-k"></div></div></div>
+        <button class="btn btn-ghost" onclick="reqNotif()" style="margin-top:8px;font-size:12px" id="nsbtn">🔔 Enable Browser Notifications</button>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:13px;color:var(--purple)">🕐 Timer Durations</div>
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Work Duration</span><span style="font-size:19px;font-weight:800;color:var(--purple)"><span id="wv">25</span> <span style="font-size:11px;color:rgba(255,255,255,.3);font-weight:500">min</span></span></div>
+          <input type="range" min="5" max="120" value="25" style="width:100%;accent-color:var(--purple)" oninput="wM=+this.value;document.getElementById('wv').textContent=this.value"/>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Short Break</span><span style="font-size:19px;font-weight:800;color:var(--green)"><span id="sv">5</span> <span style="font-size:11px;color:rgba(255,255,255,.3);font-weight:500">min</span></span></div>
+          <input type="range" min="1" max="30" value="5" style="width:100%;accent-color:var(--green)" oninput="sM=+this.value;document.getElementById('sv').textContent=this.value"/>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600">Long Break</span><span style="font-size:19px;font-weight:800;color:var(--cyan)"><span id="lv">15</span> <span style="font-size:11px;color:rgba(255,255,255,.3);font-weight:500">min</span></span></div>
+          <input type="range" min="5" max="60" value="15" style="width:100%;accent-color:var(--cyan)" oninput="lM=+this.value;document.getElementById('lv').textContent=this.value"/>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveS()">💾 Save Settings</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Vibe Modal -->
+<div class="overlay hidden" id="vmodal">
+  <div class="modal">
+    <div style="font-size:20px;font-weight:800;margin-bottom:4px">🎉 Session Complete!</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px">How was your focus session?</div>
+    <div class="vibe-grid">
+      <button class="vibe-btn" onclick="pickMood(this,'🔥 Crushed it')">🔥 Crushed it</button>
+      <button class="vibe-btn" onclick="pickMood(this,'😌 In the zone')">😌 In the zone</button>
+      <button class="vibe-btn" onclick="pickMood(this,'🧠 Deep focus')">🧠 Deep focus</button>
+      <button class="vibe-btn" onclick="pickMood(this,'😤 Struggled')">😤 Struggled</button>
+      <button class="vibe-btn" onclick="pickMood(this,'🎯 Nailed goals')">🎯 Nailed goals</button>
+      <button class="vibe-btn" onclick="pickMood(this,'😴 Tired but done')">😴 Tired but done</button>
+    </div>
+    <button class="btn btn-primary" id="vsub" onclick="submitV()">Skip</button>
+  </div>
+</div>
+
+<script>
+var mode='work',running=false,tLeft=25*60,tInt=null;
+var sessions=0,totalM=0,streak=2;
+var wM=25,sM=5,lM=15;
+var selMood=null,notifOn=false;
+var alibis=["In deep focus mode, back in a bit! ⚡","Heads down — will reply after my session 🎯"];
+var vibes=[];
+var earned=new Set(),fresh=new Set();
+var CIRC=753.98;
+
+var BADGES=[
+  {id:'s1',ico:'🌱',name:'First Step',desc:'Complete your first focus session',ok:function(s){return s>=1}},
+  {id:'s5',ico:'🔥',name:'On Fire',desc:'Complete 5 focus sessions',ok:function(s){return s>=5}},
+  {id:'s10',ico:'⚡',name:'Electrified',desc:'Complete 10 focus sessions',ok:function(s){return s>=10}},
+  {id:'s25',ico:'💎',name:'Diamond Grind',desc:'Complete 25 focus sessions',ok:function(s){return s>=25}},
+  {id:'s50',ico:'🏆',name:'Focus Legend',desc:'Complete 50 focus sessions',ok:function(s){return s>=50}},
+  {id:'r3',ico:'📆',name:'3-Day Streak',desc:'Focus 3 days in a row',ok:function(s,r){return r>=3}},
+  {id:'r7',ico:'🗓️',name:'Week Warrior',desc:'Focus 7 days in a row',ok:function(s,r){return r>=7}},
+  {id:'r30',ico:'🌟',name:'Month Master',desc:'Focus 30 days in a row',ok:function(s,r){return r>=30}},
+  {id:'owl',ico:'🦉',name:'Night Owl',desc:'Complete a session after 10pm',ok:function(s,r,h){return h>=22}},
+  {id:'bird',ico:'🐦',name:'Early Bird',desc:'Complete a session before 7am',ok:function(s,r,h){return h<7}},
+  {id:'haul',ico:'🚀',name:'Long Haul',desc:'Accumulate 500 total focus minutes',ok:function(s,r,h,m){return m>=500}},
+];
+
+var MCOLORS={'🔥 Crushed it':'#ff6b35','😌 In the zone':'#06ffa5','🧠 Deep focus':'#7c6aff','😤 Struggled':'#ffd166','🎯 Nailed goals':'#00d4ff','😴 Tired but done':'#ff6eb4'};
+
+function dur(){return mode==='work'?wM:mode==='short'?sM:lM;}
+function fmt(s){return ('0'+Math.floor(s/60)).slice(-2)+':'+('0'+(s%60)).slice(-2);}
+
+function go(tab,btn){
+  document.querySelectorAll('[id^="t-"]').forEach(function(el){el.classList.add('hidden');});
+  document.getElementById('t-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function setMode(m){
+  mode=m;running=false;clearInterval(tInt);
+  document.getElementById('sbtn').textContent='▶ Start Focus';
+  var c={work:'var(--purple)',short:'var(--green)',long:'var(--cyan)'};
+  var l={work:'Focus',short:'Short Break',long:'Long Break'};
+  document.getElementById('arc').style.stroke=c[m];
+  document.getElementById('mlbl').textContent=l[m];
+  document.getElementById('snum').style.color=c[m];
+  ['work','short','long'].forEach(function(x){
+    var b=document.getElementById('mb-'+x);
+    if(x===m){b.style.background=c[m];b.style.color='#0a0b10';}
+    else{b.style.background='transparent';b.style.color='rgba(255,255,255,.42)';}
+  });
+  tLeft=dur()*60;
+  updDisp();
+  document.getElementById('ostars').classList.add('hidden');
+  document.getElementById('ocount').textContent='0';
+}
+
+function updDisp(){
+  var total=dur()*60;
+  var prog=(total-tLeft)/total;
+  document.getElementById('arc').style.strokeDashoffset=CIRC-(prog*CIRC);
+  document.getElementById('tdisp').textContent=fmt(tLeft);
+  document.getElementById('snum').textContent='Session #'+(sessions+1);
+}
+
+function toggleRun(){
+  if(running){
+    running=false;clearInterval(tInt);
+    document.getElementById('sbtn').textContent='▶ Start Focus';
+  } else {
+    running=true;
+    document.getElementById('sbtn').textContent='⏸ Pause';
+    toast('▶ Focus Started 🎯');
+    sendN('▶ Focus Started','Stay locked in!');
+    document.getElementById('ostars').classList.remove('hidden');
+    document.getElementById('ocount').textContent='5';
+    tInt=setInterval(tick,1000);
+  }
+}
+
+function tick(){
+  var total=dur()*60;
+  if(tLeft===Math.floor(total/2)&&mode==='work'){sendN('⏱ Halfway There!','Keep going!');}
+  if(tLeft<=1){
+    clearInterval(tInt);running=false;tLeft=0;updDisp();
+    document.getElementById('sbtn').textContent='▶ Start Focus';
+    if(mode==='work'){
+      sessions++;totalM+=wM;streak++;
+      updStats();chkBadges();
+      sendN('🎉 Session Complete!','Time for a break!');
+      document.getElementById('vmodal').classList.remove('hidden');
+    } else {
+      sendN('⏰ Break Over!','Back to focus mode 🚀');
+      setMode('work');
+    }
+    return;
+  }
+  tLeft--;updDisp();
+}
+
+function doReset(){
+  running=false;clearInterval(tInt);
+  document.getElementById('sbtn').textContent='▶ Start Focus';
+  document.getElementById('ostars').classList.add('hidden');
+  document.getElementById('ocount').textContent='0';
+  tLeft=dur()*60;updDisp();
+}
+
+function updStats(){
+  document.getElementById('ss').textContent=sessions;
+  document.getElementById('sm').textContent=totalM;
+  document.getElementById('sk').textContent=streak+'d';
+  document.getElementById('hdr-sub').textContent='@GoTuber · 🔥 '+streak+' day streak';
+  document.getElementById('bstr').textContent=streak;
+}
+
+function saveS(){tLeft=dur()*60;updDisp();toast('✅ Settings saved!');}
+
+function chkBadges(){
+  var h=new Date().getHours(),newly=[];
+  BADGES.forEach(function(b){
+    if(!earned.has(b.id)&&b.ok(sessions,streak,h,totalM)){
+      earned.add(b.id);fresh.add(b.id);newly.push(b);
+    }
+  });
+  if(newly.length){
+    newly.forEach(function(b){sendN(b.ico+' Badge Unlocked!','You earned "'+b.name+'"');});
+    var dot=document.getElementById('btab').querySelector('.dot');
+    if(!dot){var d=document.createElement('span');d.className='dot';d.style.cssText='background:#ffd166;color:#0a0b10;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:2px';d.textContent=fresh.size;document.getElementById('btab').appendChild(d);}
+    setTimeout(function(){fresh.clear();renderB();var d=document.getElementById('btab').querySelector('.dot');if(d)d.remove();},8000);
+  }
+  renderB();renderBstrip();
+}
+
+function simSession(){sessions++;totalM+=25;streak++;updStats();chkBadges();toast('✅ Simulated a session!');}
+
+function renderB(){
+  var c=earned.size;
+  document.getElementById('bcnt').textContent=c;
+  document.getElementById('bprog').style.width=(c/BADGES.length*100)+'%';
+  document.getElementById('brem').textContent=(BADGES.length-c)+' to unlock';
+  var html='';
+  BADGES.forEach(function(b){
+    var e=earned.has(b.id),f=fresh.has(b.id);
+    html+='<div class="badge-card'+(e?' earned':'')+(f?' fresh':'')+'"><div class="badge-ico'+(e?' earned':'')+'">'+b.ico+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+(e?'#fff':'rgba(255,255,255,.28)')+'">'+b.name+(f?'<span style="font-size:9px;background:#ffd166;color:#0a0b10;padding:2px 6px;border-radius:20px;font-weight:800;margin-left:7px">NEW!</span>':'')+'</div><div style="font-size:11px;color:'+(e?'rgba(255,255,255,.4)':'rgba(255,255,255,.18)')+'">'+b.desc+'</div></div>'+(e?'<div style="font-size:16px;color:var(--green)">✓</div>':'')+'</div>';
+  });
+  document.getElementById('blist').innerHTML=html;
+}
+
+function renderBstrip(){
+  if(earned.size>0){
+    document.getElementById('bstrip').classList.remove('hidden');
+    var html='';
+    BADGES.filter(function(b){return earned.has(b.id);}).forEach(function(b){
+      html+='<div title="'+b.name+'" style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)">'+b.ico+'</div>';
+    });
+    document.getElementById('bstrip-icons').innerHTML=html;
+  }
+}
+
+function addA(){
+  var inp=document.getElementById('ainp');
+  if(inp.value.trim()){alibis.unshift(inp.value.trim());inp.value='';renderA();}
+}
+function renderA(){
+  if(!alibis.length){document.getElementById('alist').innerHTML='<div style="text-align:center;padding:16px 0;color:rgba(255,255,255,.3);font-size:12px">No messages yet!</div>';return;}
+  document.getElementById('alist').innerHTML=alibis.map(function(a,i){
+    return '<div class="alibi-row"><div style="font-size:12px;flex:1;margin-right:8px;color:rgba(255,255,255,.75)">'+a+'</div><div style="display:flex;gap:6px"><button onclick="cpA('+i+',this)" style="background:rgba(0,212,255,.1);border:none;color:var(--cyan);border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px">📋</button><button onclick="dlA('+i+')" style="background:rgba(255,80,80,.1);border:none;color:#ff5050;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px">🗑️</button></div></div>';
+  }).join('');
+}
+function cpA(i,btn){navigator.clipboard&&navigator.clipboard.writeText(alibis[i]).catch(function(){});btn.textContent='✓';setTimeout(function(){btn.textContent='📋';},1500);}
+function dlA(i){alibis.splice(i,1);renderA();}
+
+function linkP(){
+  var v=document.getElementById('pinp').value.trim();
+  if(!v)return;
+  document.getElementById('pname').textContent='@'+v;
+  document.getElementById('pform').classList.add('hidden');
+  document.getElementById('pactive').classList.remove('hidden');
+  document.getElementById('pinp').value='';
+}
+function rmP(){document.getElementById('pform').classList.remove('hidden');document.getElementById('pactive').classList.add('hidden');}
+
+function pickMood(btn,mood){
+  document.querySelectorAll('.vibe-btn').forEach(function(b){b.classList.remove('sel');});
+  btn.classList.add('sel');selMood=mood;
+  document.getElementById('vsub').textContent='Share Vibe ✨';
+}
+function submitV(){
+  if(selMood){
+    var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    vibes.unshift({mood:selMood,time:t});
+    document.getElementById('vemp').style.display='none';
+    document.getElementById('vfeed').innerHTML=vibes.map(function(v){
+      var c=MCOLORS[v.mood]||'#7c6aff';
+      return '<div class="card" style="border-left:3px solid '+c+'"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:700">'+v.mood+'</div><div style="font-size:11px;color:rgba(255,255,255,.32)">'+v.time+'</div></div><div style="font-size:12px;color:rgba(255,255,255,.38);margin-top:3px">@GoTuber</div></div>';
+    }).join('');
+    selMood=null;
+  }
+  document.getElementById('vmodal').classList.add('hidden');
+  document.getElementById('vsub').textContent='Skip';
+  document.querySelectorAll('.vibe-btn').forEach(function(b){b.classList.remove('sel');});
+}
+
+function toggleBell(){if(!notifOn)reqNotif();else{notifOn=!notifOn;toast(notifOn?'🔔 On':'🔕 Muted');}}
+async function reqNotif(){
+  if(!('Notification' in window)){toast('❌ Not supported');return;}
+  var p=await Notification.requestPermission();
+  if(p==='granted'){notifOn=true;document.getElementById('nbar').style.display='none';document.getElementById('bell').classList.add('on');document.getElementById('nsbtn').textContent='✅ Notifications enabled';toast('🔔 Notifications enabled!');}
+  else toast('❌ Notifications denied');
+}
+function sendN(title,body){
+  if(notifOn&&'Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:body});}catch(e){}}
+}
+
+var _tt=null;
+function toast(msg){
+  var el=document.querySelector('.toast');if(el)el.remove();
+  el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);
+  clearTimeout(_tt);_tt=setTimeout(function(){if(el.parentNode)el.remove();},3000);
+}
+
+// Init
+renderA();renderB();
+if('Notification' in window&&Notification.permission==='granted'){notifOn=true;document.getElementById('nbar').style.display='none';document.getElementById('bell').classList.add('on');}
+</script>
+</body>
+</html>
